@@ -69,6 +69,16 @@ template CoefficientPerBatch (
     sbCommitmentHasher.hash === sbCommitment;
 
     //  ----------------------------------------------------------------------- 
+    // Verify coeffCommitment
+    component coeffCommitmentHasher = Hasher4();
+    coeffCommitmentHasher.in[0] <== ballotTreeRoot1;
+    coeffCommitmentHasher.in[1] <== ballotTreeRoot2;
+    coeffCommitmentHasher.in[2] <== coeffTreeRoot;
+    coeffCommitmentHasher.in[3] <== coeffSalt;
+    coeffCommitmentHasher.hash === coeffCommitment;
+
+
+    //  ----------------------------------------------------------------------- 
     // Verify inputHash
     component inputHasher = CoefficientInputHasher();
     inputHasher.sbCommitment <== sbCommitment;
@@ -144,9 +154,6 @@ template CoefficientPerBatch (
         }
         voteTree2[i].root === ballots2[i][BALLOT_VO_ROOT_IDX];
     }
-
-    //  ----------------------------------------------------------------------- 
-    // order check
 
 
     //  ----------------------------------------------------------------------- 
