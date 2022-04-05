@@ -113,6 +113,8 @@ class Poll {
     public WW = 4     // number of digits for float representation
     public ballotTree1: IncrementalQuinTree // used for coefficient calculation
     public ballotTree2: IncrementalQuinTree  // used for coefficient calculation
+    public ballotHashs1: BigInt[] = []
+    public ballotHashs2: BigInt[] = []
     public coeffTree: IncrementalQuinTree // store coefficient results
     public coeff: BigInt[] = [] // store coefficient results
 
@@ -726,6 +728,33 @@ class Poll {
         return this.numCoeffBatchesCalced * batchSize >= this.numCoeffTotal
     }
 
+    public coeffOrderChecking = () => {
+        const stateRoot = this.stateTree.root
+        const ballotRoot = this.ballotTree.root
+        this.genCoeffBallotTrees()  // will only be calculated once
+        const ballotTreeRoot1 = this.ballotTree1.root
+        const ballotTreeRoot2 = this.ballotTree2.root
+        const ballotHashs1 = this.ballotHashs1.map(x => BigInt(x.toString()))
+        const ballotHashs2 = this.ballotHashs2.map(x => BigInt(x.toString()))
+        let ballotHashs = this.ballots.map(x=>x.hash())
+        const MaxSize = this.STATE_TREE_ARITY ** STATE_TREE_DEPTH
+        // fill ballotHashs with 0 to match circuitInput size 
+        // zero value also indicates the end of the actual hash array
+        for (let i = this.ballots.length; i < MaxSize; i++) {
+            ballotHashs.push(BigInt(0))
+        }
+
+        const circuitInputs = stringifyBigInts({
+            ballotRoot,
+            ballotTreeRoot1,
+            ballotTreeRoot2,
+            ballotHashs,
+            ballotHashs1,
+            ballotHashs2
+        })
+        return circuitInputs
+    }
+
     public coeffPerBatch = () => {
         const batchSize = this.COEFF_TREE_ARITY ** this.treeDepths.intCoeffTreeDepth  
 
@@ -851,6 +880,8 @@ class Poll {
             const [row, col] = matrixIndex(i, this.numSignUps)
             this.ballotTree1.insert(this.ballots[row].hash())
             this.ballotTree2.insert(this.ballots[col].hash())
+            this.ballotHashs1.push(this.ballots[row].hash())
+            this.ballotHashs2.push(this.ballots[col].hash())
             let res = this.coefficientCalculation(row, col)
             this.coeffTree.insert(res)
             this.coeff.push(res)
@@ -1183,6 +1214,8 @@ class Poll {
             }
         })
         copied.ballots = this.ballots.map((x: Ballot) => x.copy())
+        copied.ballotHashs1 = this.ballotHashs1.map(x => BigInt(x.toString()))
+        copied.ballotHashs2 = this.ballotHashs2.map(x => BigInt(x.toString()))
         copied.encPubKeys = this.encPubKeys.map((x: PubKey) => x.copy())
         if (this.ballotTree) {
             copied.ballotTree = this.ballotTree.copy()

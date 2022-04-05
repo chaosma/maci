@@ -441,7 +441,7 @@ const genProofs = async (args: any) => {
 
     const coeffFileData = {
         provider: signer.provider.connection.url,
-        maci: args.contract,
+        maci: maciAddress,
         pollId,
         coeffCommitment: asHex(coeffCircuitInputs.coeffCommitment),
         coeff: {
@@ -504,7 +504,7 @@ const genProofs = async (args: any) => {
 
     const tallyFileData = {
         provider: signer.provider.connection.url,
-        maci: args.contract,
+        maci: maciAddress,
         pollId,
         newTallyCommitment: asHex(tallyCircuitInputs.newTallyCommitment),
         results: {
