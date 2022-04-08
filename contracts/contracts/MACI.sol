@@ -30,7 +30,7 @@ contract MACI is IMACI, DomainObjs, Params, SnarkCommon, Ownable {
 
     // The state tree depth is fixed. As such it should be as large as feasible
     // so that there can be as many users as possible.  i.e. 5 ** 10 = 9765625
-    uint8 public override stateTreeDepth = 10;
+    uint8 public override stateTreeDepth = 2;
 
     // IMPORTANT: remember to change the spent voice credits tree in Poll.sol
     // if we change the state tree depth!
