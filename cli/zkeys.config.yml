@@ -1,14 +1,14 @@
 ---
-out: "./zkeys"
+out: "/data"
 
 # Make sure that these paths are correct
-circomPath: "../../.local/bin/circom"
+circomPath: "/home/ubuntu/.cargo/bin/circom"
 snarkjsPath: "./node_modules/snarkjs/build/cli.cjs"
 
 circuits:
 - template: "../circuits/circom/processMessages.circom"
   component: "ProcessMessages"
-  params: [10, 2, 1, 2] # stateTreeDepth, msgTreeDepth, msgBatchDepth, voteOptionTreeDepth
+  params: [10, 10, 3, 4] # stateTreeDepth, msgTreeDepth, msgBatchDepth, voteOptionTreeDepth
   type: "test"
   pubInputs: ["inputHash"]
 
@@ -20,7 +20,7 @@ circuits:
 
 - template: "../circuits/circom/tallyVotes.circom"
   component: "TallyVotes"
-  params: [10, 1, 2] # stateTreeDepth, intStateTreeDepth, voteOptionTreeDepth
+  params: [10, 2, 4] # stateTreeDepth, intStateTreeDepth, voteOptionTreeDepth
   type: "test"
   pubInputs: ["inputHash"]
 
@@ -33,7 +33,7 @@ circuits:
 
 - template: "../circuits/circom/subsidy.circom"
   component: "SubsidyPerBatch"
-  params: [10, 1, 2] # stateTreeDepth, intStateTreeDepth, voteOptionTreeDepth
+  params: [10, 2, 4] # stateTreeDepth, intStateTreeDepth, voteOptionTreeDepth
   type: "test"
   pubInputs: ["inputHash"]
 

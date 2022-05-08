@@ -1,0 +1,28 @@
+params:
+stateTreeDepth=10
+intStateTreeDepth=2
+msgTreeDepth=10
+voteOptionTreeDepth=4
+msgBatchDepth=3
+
+compile processMessage costs:  1057 seconds
+compile tally and subsidy circuit costs: 11931 seconds (this might be larger circuit, where at most msgTreeDepth=15, intStateTreeDepth=3, msgBatchDepth=4)
+
+gen zkey for process message and tally is okay, but subsidy took several hours
+
+1. numSignUps = 1000, 2 votes per signup
+balance before: 19.882 ETH (on arbitrium rinkeby)
+
+SignUp Error (how is it possible):
+State index: 248
+Transaction hash: 0xbf524d9a4f4b13ac114a2d93e910f6e3bc40db8b73563d458542450f5f7d9a55
+State index: 249 MACI: Maximum Number Of Signups Reached
+https://rinkeby-explorer.arbitrum.io/tx/0xd6cb03296351f8d5b67d2def7c60477b8050ec7d9e5e720d48661fcdf433fb90
+
+
+Publish Message Error:
+https://rinkeby-explorer.arbitrum.io/tx/0x074f8ff0d6cbc2efe75fcb026d9d52e8d92942fa82bca0e4ac1cca599b0a690f
+PollE03 
+
+
+balance after: 19.7248 ETH

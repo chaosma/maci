@@ -345,7 +345,7 @@ const genProofs = async (args: any) => {
     // Build an off-chain representation of the MACI contract using data in the contract storage
 
     // some rpc endpoint like bsc chain has limitation to retreive history logs
-    let fromBlock = 0
+    let fromBlock = 11683991 // 10615019 //12235328
     const txHash = args.transaction_hash
     if (txHash) {
         let txn = await signer.provider.getTransaction(txHash);
