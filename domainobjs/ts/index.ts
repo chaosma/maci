@@ -12,7 +12,8 @@ import {
     decrypt,
     sign,
     hashLeftRight,
-    hash12,
+    hash13,
+    hash3,
     hash4,
     hash5,
     verifySignature,
@@ -379,23 +380,27 @@ interface VoteOptionTreeLeaf {
  * An encrypted command and signature.
  */
 class Message {
+    public msgType: BigInt
     public data: BigInt[]
     public static DATA_LENGTH = 10 
 
     constructor (
+        msgType: BigInt,
         data: BigInt[],
     ) {
         assert(data.length === Message.DATA_LENGTH)
+        this.msgType = msgType
         this.data = data
     }
 
     private asArray = (): BigInt[] => {
-        return this.data
+        return [this.msgType].concat(this.data)
     }
 
     public asContractParam = () => {
         return {
-            data: this.data.map((x: BigInt) => x.toString()),
+            msgType: this.msgType,
+            data: this.data.map((x:BigInt) => x.toString()),
         }
     }
 
@@ -405,23 +410,36 @@ class Message {
     }
 
     public hash = (
-        _encPubKey: PubKey,
+        _encPubKey?: PubKey,
     ): BigInt => {
-        return hash12([
-            ...this.data,
-            ..._encPubKey.rawPubKey,
-        ])
+        if (this.msgType == BigInt(1)) {
+            return hash13([
+                ...[this.msgType],
+                ...this.data,
+                ..._encPubKey.rawPubKey,
+            ])
+        }
+        if (this.msgType == BigInt(2)) {
+            return hash3([
+                ...[this.msgType],
+                ...this.data,
+            ])
+        }
     }
 
     public copy = (): Message => {
 
         return new Message(
+            BigInt(this.msgType.toString()),
             this.data.map((x: BigInt) => BigInt(x.toString())),
         )
     }
 
     public equals = (m: Message): boolean => {
         if (this.data.length !== m.data.length) {
+            return false
+        }
+        if (this.msgType !== m.msgType) {
             return false
         }
 

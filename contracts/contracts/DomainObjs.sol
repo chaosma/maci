@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma experimental ABIEncoderV2;
 pragma solidity ^0.7.2;
-import { Hasher } from "./crypto/Hasher.sol";
+import {Hasher} from "./crypto/Hasher.sol";
 
 contract IPubKey {
     struct PubKey {
@@ -14,7 +14,8 @@ contract IMessage {
     uint8 constant MESSAGE_DATA_LENGTH = 10;
 
     struct Message {
-        uint256[MESSAGE_DATA_LENGTH] data;
+        uint256 msgType; // 1: vote message, 2: topup message
+        uint256[] data; // data length is either 2 or 10
     }
 }
 
@@ -25,7 +26,11 @@ contract DomainObjs is IMessage, Hasher, IPubKey {
         uint256 timestamp;
     }
 
-    function hashStateLeaf(StateLeaf memory _stateLeaf) public pure returns (uint256) {
+    function hashStateLeaf(StateLeaf memory _stateLeaf)
+        public
+        pure
+        returns (uint256)
+    {
         uint256[4] memory plaintext;
         plaintext[0] = _stateLeaf.pubKey.x;
         plaintext[1] = _stateLeaf.pubKey.y;
