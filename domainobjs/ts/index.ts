@@ -425,6 +425,7 @@ class Message {
                 ...this.data,
             ])
         }
+        return BigInt(0)
     }
 
     public copy = (): Message => {

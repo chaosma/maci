@@ -132,6 +132,7 @@ describe('ProcessMessage circuit', () => {
                 coordinatorKeypair.pubKey,
             )
             const message = command.encrypt(signature, sharedKey)
+            console.log(`hehe, message= ${message}`)
             messages.push(message)
             commands.push(command)
             messageTree.insert(message.hash(ecdhKeypair.pubKey))

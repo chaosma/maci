@@ -118,6 +118,13 @@ const airdrop = async (args: any) => {
             return 1
         }
         const maciAddress = args.contract ? args.contract: contractAddrs["MACI"]
+        const maciContractAbi = parseArtifact('MACI')[0]
+        const maciContract = new ethers.Contract(
+            maciAddress,
+            maciContractAbi,
+            signer,
+        )
+    
         const pollAddr = await maciContract.getPoll(pollId)
         const MAXIMUM_ALLOWANCE = 100000000 * 10 ** 18
         try {
