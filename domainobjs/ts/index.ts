@@ -823,7 +823,7 @@ class Command implements ICommand {
 
         const ciphertext: Ciphertext = encrypt(plaintext, sharedKey, BigInt(0))
 
-        const message = new Message(ciphertext)
+        const message = new Message(BigInt(1), ciphertext)
         
         return message
     }

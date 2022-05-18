@@ -1,0 +1,98 @@
+import {
+    getDefaultSigner,
+    parseArtifact,
+} from 'maci-contracts'
+
+import {
+    validateEthAddress,
+    contractExists,
+} from './utils'
+
+import {readJSONFile} from 'maci-common'
+
+const { ethers } = require('hardhat')
+
+import {contractFilepath} from './config'
+
+const configureSubparser = (subparsers: any) => {
+    const parser = subparsers.addParser(
+        'topup',
+        { addHelp: true },
+    )
+
+    parser.addArgument(
+        ['-e', '--erc20-contract'],
+        {
+            required: true,
+            type: 'string',
+            help: 'The topup credit contract address',
+        }
+    )
+
+    parser.addArgument(
+        ['-a', '--amount'],
+        {
+            required: true,
+            type: 'int',
+            action: 'store',
+            help: 'The amount of topup'
+        }
+    )
+
+}
+
+const airdrop = async (args: any) => {
+
+    let contractAddrs = readJSONFile(contractFilepath)
+    if ((!contractAddrs||!contractAddrs["TopupCredit"]) && !args.erc20_contract) {
+        console.error('Error: ERC20 contract address is empty') 
+        return 1
+    }
+    const ERC20Address = args.erc20_contract ? args.erc20_contract: contractAddrs["ERC20"]
+
+    if (!validateEthAddress(ERC20Address)) {
+        console.error('Error: invalid topup credit contract address')
+        return 1
+    }
+
+    const signer = await getDefaultSigner()
+
+    if (! await contractExists(signer.provider, ERC20Address)) {
+        console.error('Error: there is no contract deployed at the specified address')
+        return 1
+    }
+
+    const ERC20ContractAbi = parseArtifact('TopupCredit')[0]
+    const ERC20Contract = new ethers.Contract(
+        ERC20Address,
+        ERC20ContractAbi,
+        signer,
+    )
+    const amount = args.amount
+    if (amount < 0) {
+        console.error('Error: airdrop amount must be greater than 0')
+        return 1
+    }
+
+    let tx
+    try {
+        tx = await ERC20Contract.airdrop(
+            amount,
+            { gasLimit: 1000000 }
+        )
+        await tx.wait()
+        console.log('Transaction hash:', tx.hash)
+    } catch(e) {
+        console.error('Error: the transaction failed')
+        if (e.message) {
+            console.error(e.message)
+        }
+        return 1
+    }
+    return 0
+}
+
+export {
+    airdrop,
+    configureSubparser,
+}

@@ -13,7 +13,7 @@ import {AccQueue, AccQueueQuinaryMaci} from "./trees/AccQueue.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {VkRegistry} from "./VkRegistry.sol";
 import {EmptyBallotRoots} from "./trees/EmptyBallotRoots.sol";
-import {VoiceCredit} from "./ERC20.sol";
+import {TopupCredit} from "./TopupCredit.sol";
 
 contract MessageAqFactory is Ownable {
     function deploy(uint256 _subDepth) public onlyOwner returns (AccQueue) {
@@ -28,7 +28,7 @@ contract PollDeploymentParams {
         VkRegistry vkRegistry;
         IMACI maci;
         AccQueue messageAq;
-        VoiceCredit voiceCredit;
+        TopupCredit topupCredit;
     }
 }
 
@@ -64,6 +64,7 @@ contract PollFactory is
         PubKey memory _coordinatorPubKey,
         VkRegistry _vkRegistry,
         IMACI _maci,
+        TopupCredit _topupCredit,
         address _pollOwner
     ) public onlyOwner returns (Poll) {
         uint256 treeArity = 5;
@@ -97,6 +98,7 @@ contract PollFactory is
         extContracts.vkRegistry = _vkRegistry;
         extContracts.maci = _maci;
         extContracts.messageAq = messageAq;
+        extContracts.topupCredit = _topupCredit;
 
         Poll poll = new Poll(
             _duration,
@@ -239,14 +241,14 @@ contract Poll is
         return secondsPassed > duration;
     }
 
-    function topup(uint256 amount, uint256 stateIndex) public {
+    function topup(uint256 stateIndex, uint256 amount) public {
         uint256 secondsPassed = block.timestamp - deployTime;
         require(secondsPassed <= duration, ERROR_VOTING_PERIOD_PASSED);
         require(
             numMessages <= maxValues.maxMessages,
             ERROR_MAX_MESSAGES_REACHED
         );
-        extContracts.voiceCredit.transferFrom(
+        extContracts.topupCredit.transferFrom(
             msg.sender,
             address(this),
             amount
