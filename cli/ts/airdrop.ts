@@ -16,14 +16,13 @@ import {contractFilepath} from './config'
 
 const configureSubparser = (subparsers: any) => {
     const parser = subparsers.addParser(
-        'topup',
+        'airdrop',
         { addHelp: true },
     )
 
     parser.addArgument(
         ['-e', '--erc20-contract'],
         {
-            required: true,
             type: 'string',
             help: 'The topup credit contract address',
         }
@@ -64,7 +63,7 @@ const airdrop = async (args: any) => {
         console.error('Error: ERC20 contract address is empty') 
         return 1
     }
-    const ERC20Address = args.erc20_contract ? args.erc20_contract: contractAddrs["ERC20"]
+    const ERC20Address = args.erc20_contract ? args.erc20_contract: contractAddrs["TopupCredit"]
 
     if (!validateEthAddress(ERC20Address)) {
         console.error('Error: invalid topup credit contract address')
@@ -84,7 +83,7 @@ const airdrop = async (args: any) => {
         ERC20ContractAbi,
         signer,
     )
-    const amount = args.amount
+    const amount = args.amount * 10 ** 18
     if (amount < 0) {
         console.error('Error: airdrop amount must be greater than 0')
         return 1
@@ -93,20 +92,20 @@ const airdrop = async (args: any) => {
     let tx
     try {
         tx = await ERC20Contract.airdrop(
-            amount,
+            amount.toString(),
             { gasLimit: 1000000 }
         )
         await tx.wait()
         console.log('Transaction hash of airdrop:', tx.hash)
     } catch(e) {
-        console.error('Error: the transaction failed')
+        console.error('Error: the transaction of airdrop failed')
         if (e.message) {
             console.error(e.message)
         }
         return 1
     }
 
-    if (args.poll_id) { // only process if specify poll_id
+    if (typeof args.poll_id !== 'undefined') {
         const pollId = args.poll_id
         if (pollId < 0) {
             console.error('Error: the Poll ID should be a positive integer.')
@@ -126,7 +125,7 @@ const airdrop = async (args: any) => {
         )
     
         const pollAddr = await maciContract.getPoll(pollId)
-        const MAXIMUM_ALLOWANCE = 100000000 * 10 ** 18
+        let MAXIMUM_ALLOWANCE = "10000000000000000000000000"
         try {
             tx = await ERC20Contract.approve(
                 pollAddr,

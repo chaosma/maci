@@ -15,7 +15,7 @@ contract TopupCredit is ERC20, Ownable {
     }
 
     function airdrop(uint256 amount) public {
-        require(amount < MAXIMUM_AIRDROP_AMOUNT);
+        require(amount < MAXIMUM_AIRDROP_AMOUNT, "amount exceed maximum limit");
         _mint(msg.sender, amount);
     }
 }

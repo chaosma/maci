@@ -262,7 +262,8 @@ const genMaciStateFromContract = async (
         const event = pollIface.parseLog(log)
 
         const message = new Message(
-            event.args._message[0].map((x) => BigInt(x)),
+            BigInt(1),
+            event.args._message[0].map((x) => BigInt(x)), // hehe, check here
         )
 
         const encPubKey = new PubKey(

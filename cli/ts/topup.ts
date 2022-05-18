@@ -23,7 +23,6 @@ const configureSubparser = (subparsers: any) => {
     parser.addArgument(
         ['-x', '--contract'],
         {
-            required: true,
             type: 'string',
             help: 'The MACI contract address',
         }
@@ -82,7 +81,7 @@ const topup = async (args: any) => {
         return 1
     }
 
-    const amount = args.amount
+    const amount = args.amount * 10 ** 18
     if (amount < 0) {
         console.error('Error: topup amount must be greater than 0')
         return 1
@@ -122,7 +121,7 @@ const topup = async (args: any) => {
     try {
         tx = await pollContract.topup(
             stateIndex,
-            amount,
+            amount.toString(),
             { gasLimit: 1000000 },
         )
         await tx.wait()

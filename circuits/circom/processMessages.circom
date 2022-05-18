@@ -30,7 +30,7 @@ template ProcessMessages(
     var TREE_ARITY = 5;
     var batchSize = TREE_ARITY ** msgBatchDepth;
 
-    var MSG_LENGTH = 10;
+    var MSG_LENGTH = 11;
     var PACKED_CMD_LENGTH = 4;
 
     var STATE_LEAF_LENGTH = 4;
