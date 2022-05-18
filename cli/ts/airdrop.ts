@@ -39,6 +39,22 @@ const configureSubparser = (subparsers: any) => {
         }
     )
 
+    parser.addArgument(
+        ['-x', '--contract'],
+        {
+            type: 'string',
+            help: 'The MACI contract address',
+        }
+    )
+    parser.addArgument(
+        ['-o', '--poll-id'],
+        {
+            type: 'int',
+            action: 'store',
+            help: 'poll id'
+        }
+    )
+
 }
 
 const airdrop = async (args: any) => {
@@ -81,13 +97,44 @@ const airdrop = async (args: any) => {
             { gasLimit: 1000000 }
         )
         await tx.wait()
-        console.log('Transaction hash:', tx.hash)
+        console.log('Transaction hash of airdrop:', tx.hash)
     } catch(e) {
         console.error('Error: the transaction failed')
         if (e.message) {
             console.error(e.message)
         }
         return 1
+    }
+
+    if (args.poll_id) { // only process if specify poll_id
+        const pollId = args.poll_id
+        if (pollId < 0) {
+            console.error('Error: the Poll ID should be a positive integer.')
+            return 1
+        }
+    
+        if ((!contractAddrs["MACI"]) && !args.contract) {
+            console.error('Error: MACI contract address is empty') 
+            return 1
+        }
+        const maciAddress = args.contract ? args.contract: contractAddrs["MACI"]
+        const pollAddr = await maciContract.getPoll(pollId)
+        const MAXIMUM_ALLOWANCE = 100000000 * 10 ** 18
+        try {
+            tx = await ERC20Contract.approve(
+                pollAddr,
+                MAXIMUM_ALLOWANCE,
+                { gasLimit: 1000000 }
+            )
+            await tx.wait()
+            console.log('Transaction hash of approve:', tx.hash)
+        } catch(e) {
+            console.error('Error: the transaction failed')
+            if (e.message) {
+                console.error(e.message)
+            }
+            return 1
+        }
     }
     return 0
 }
