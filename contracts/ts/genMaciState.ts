@@ -262,8 +262,8 @@ const genMaciStateFromContract = async (
         const event = pollIface.parseLog(log)
 
         const message = new Message(
-            BigInt(1),
-            event.args._message[0].map((x) => BigInt(x)), // hehe, check here
+            event.args._message[0],
+            event.args._message[1].map((x) => BigInt(x)), 
         )
 
         const encPubKey = new PubKey(
@@ -387,6 +387,10 @@ const genMaciStateFromContract = async (
                 action.data.message,
                 action.data.encPubKey,
             )
+        } else if (action['type'] === 'TopupMessage') {
+            maciState.polls[pollId].topupMessage(
+            )
+        }
         } else if (action['type'] === 'MergeMaciStateAqSubRoots') {
             maciState.stateAq.mergeSubRoots(
                 action.data.numSrQueueOps,

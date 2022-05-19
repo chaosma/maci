@@ -665,21 +665,69 @@ class StateLeaf implements IStateLeaf {
     }
 }
 
-interface ICommand {
-    stateIndex: BigInt;
-    newPubKey: PubKey;
-    voteOptionIndex: BigInt;
-    newVoteWeight: BigInt;
-    nonce: BigInt;
+class Command {
+   public cmdType: BigInt;
+   constructor() {
+       throw new Error("Abstract method!")
+   }
+   public copy = (): Command => {
+       throw new Error("Abstract method!")
+   }
+   public equals = (Command): boolean => {
+       throw new Error("Abstract method!")
+   }
+}
 
-    sign: (PrivKey) => Signature;
-    encrypt: (EcdhSharedKey, Signature) => Message;
+
+
+class TCommand extends Command {
+    public cmdType: BigInt
+    public stateIndex: BigInt
+    public amount: BigInt
+    public nonce: BigInt
+    public pollId: BigInt
+    public salt: BigInt
+
+    constructor(stateIndex: BigInt, amount: BigInt, nonce: BigInt, pollId: BigInt, salt: BigInt = genRandomSalt()) {
+        super()
+        const limit50Bits = BigInt(2 ** 50)
+        assert(limit50Bits >= stateIndex)
+        assert(limit50Bits >= amount)
+        assert(limit50Bits >= nonce)
+        assert(limit50Bits >= pollId)
+
+        this.cmdType = BigInt(2)
+        this.stateIndex = stateIndex
+        this.amount = amount
+        this.nonce = nonce
+        this.pollId = pollId
+        this.salt = salt
+    }
+
+    public copy = (): TCommand => {
+        return new TCommand(
+            BigInt(this.stateIndex.toString()),
+            BigInt(this.amount.toString()),
+            BigInt(this.nonce.toString()),
+            BigInt(this.pollId.toString()),
+            BigInt(this.salt.toString()),
+        )
+    }
+
+    public equals = (command: TCommand): boolean => {
+        return this.stateIndex === command.stateIndex &&
+            this.amount === command.amount &&
+            this.nonce === command.nonce &&
+            this.pollId === command.pollId &&
+            this.salt === command.salt
+    }
 }
 
 /*
  * Unencrypted data whose fields include the user's public key, vote etc.
  */
-class Command implements ICommand {
+class PCommand extends Command {
+    public cmdType: BigInt
     public stateIndex: BigInt
     public newPubKey: PubKey
     public voteOptionIndex: BigInt
@@ -697,6 +745,7 @@ class Command implements ICommand {
         pollId: BigInt,
         salt: BigInt = genRandomSalt(),
     ) {
+        super()
         const limit50Bits = BigInt(2 ** 50)
         assert(limit50Bits >= stateIndex)
         assert(limit50Bits >= voteOptionIndex)
@@ -704,6 +753,7 @@ class Command implements ICommand {
         assert(limit50Bits >= nonce)
         assert(limit50Bits >= pollId)
 
+        this.cmdType = BigInt(1)
         this.stateIndex = stateIndex
         this.newPubKey = newPubKey
         this.voteOptionIndex = voteOptionIndex
@@ -713,9 +763,9 @@ class Command implements ICommand {
         this.salt = salt
     }
 
-    public copy = (): Command => {
+    public copy = (): PCommand => {
 
-        return new Command(
+        return new PCommand(
             BigInt(this.stateIndex.toString()),
             this.newPubKey.copy(),
             BigInt(this.voteOptionIndex.toString()),
@@ -756,8 +806,7 @@ class Command implements ICommand {
     /*
      * Check whether this command has deep equivalence to another command
      */
-    public equals = (command: Command): boolean => {
-
+    public equals = (command: PCommand): boolean => {
         return this.stateIndex === command.stateIndex &&
             this.newPubKey[0] === command.newPubKey[0] &&
             this.newPubKey[1] === command.newPubKey[1] &&
@@ -871,7 +920,7 @@ class Command implements ICommand {
         const newPubKey = new PubKey([decrypted[1], decrypted[2]])
         const salt = decrypted[3]
 
-        const command = new Command(
+        const command = new PCommand(
             stateIndex,
             newPubKey,
             voteOptionIndex,
@@ -890,10 +939,13 @@ class Command implements ICommand {
     }
 }
 
+
 export {
     StateLeaf,
     Ballot,
     VoteOptionTreeLeaf,
+    PCommand,
+    TCommand,
     Command,
     Message,
     Keypair,

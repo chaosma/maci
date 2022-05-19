@@ -16,6 +16,8 @@ import {
     PubKey,
     VerifyingKey,
     Command,
+    PCommand,
+    TCommand,
     Message,
     Keypair,
     StateLeaf,
@@ -65,7 +67,6 @@ class Poll {
     public messageTree: IncrementalQuinTree
     public commands: Command[] = []
 
-    public signatures: Signature[] = []
     public encPubKeys: PubKey[] = []
     public STATE_TREE_ARITY = 5
     public MESSAGE_TREE_ARITY = 5
@@ -184,6 +185,11 @@ class Poll {
         this.stateCopied = true
     }
 
+    // Insert topup message into commands
+    public topupMessage = (_message: Message) => {
+
+    }
+
     /*
      * Inserts a Message and the corresponding public key used to generate the
      * ECDH shared key which was used to encrypt said message.
@@ -192,6 +198,7 @@ class Poll {
         _message: Message,
         _encPubKey: PubKey,
     ) => {
+        assert(_message.msgType == BigInt(1))
         assert(
             _encPubKey.rawPubKey[0] < SNARK_FIELD_SIZE &&
             _encPubKey.rawPubKey[1] < SNARK_FIELD_SIZE
@@ -212,9 +219,8 @@ class Poll {
             this.coordinatorKeypair.privKey,
             _encPubKey,
         )
-        const { command, signature } = Command.decrypt(_message, sharedKey)
+        const { command, signature } = PCommand.decrypt(_message, sharedKey)
         this.commands.push(command)
-        this.signatures.push(signature)
     }
 
     /*
@@ -512,7 +518,7 @@ class Poll {
 
         const stateIndices: number[] = []
         for (let i = 0; i < messageBatchSize; i ++) {
-            const stateIndex = Number(commands[i].stateIndex)
+            const stateIndex = Number((commands[i] as PCommand).stateIndex)
             stateIndices.push(stateIndex)
         }
 
@@ -593,7 +599,7 @@ class Poll {
                 this.coordinatorKeypair.privKey,
                 encPubKey,
             )
-            const { command, signature } = Command.decrypt(message, sharedKey)
+            const { command, signature } = PCommand.decrypt(message, sharedKey)
 
             const stateLeafIndex = BigInt(`${command.stateIndex}`)
 
@@ -1177,15 +1183,6 @@ class Poll {
         copied.stateLeaves = this.stateLeaves.map((x: StateLeaf) => x.copy())
         copied.messages = this.messages.map((x: Message) => x.copy())
         copied.commands = this.commands.map((x: Command) => x.copy())
-        copied.signatures = this.signatures.map((x: Signature) => {
-            return {
-                R8: [
-                    BigInt(x.R8[0].toString()),
-                    BigInt(x.R8[1].toString()),
-                ],
-                S: BigInt(x.S.toString()),
-            }
-        })
         copied.ballots = this.ballots.map((x: Ballot) => x.copy())
         copied.encPubKeys = this.encPubKeys.map((x: PubKey) => x.copy())
         if (this.ballotTree) {
