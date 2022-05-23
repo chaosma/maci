@@ -5,7 +5,7 @@ import {
 } from './utils'
 
 import {
-    Command,
+    PCommand,
     Keypair,
 } from 'maci-domainobjs'
 
@@ -197,7 +197,7 @@ describe('Poseidon hash circuits', () => {
                 ) & BigInt(genRandomSalt())
             }
 
-            const command: Command = new Command(
+            const command: PCommand = new PCommand(
                 random50bitBigInt(),
                 k.pubKey,
                 random50bitBigInt(),

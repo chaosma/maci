@@ -237,6 +237,12 @@ const genMaciStateFromContract = async (
         fromBlock: fromBlock,
     })
 
+    const topupLogs = await provider.getLogs({
+        ...pollContract.filters.TopupMessage(),
+        fromBlock: fromBlock,
+    })
+
+
     const mergeMaciStateAqSubRootsLogs = await provider.getLogs({
         ...pollContract.filters.MergeMaciStateAqSubRoots(),
         fromBlock: fromBlock,
@@ -262,13 +268,15 @@ const genMaciStateFromContract = async (
         const event = pollIface.parseLog(log)
 
         const message = new Message(
-            event.args._message[0],
+            BigInt(event.args._message[0]),
             event.args._message[1].map((x) => BigInt(x)), 
         )
 
         const encPubKey = new PubKey(
             event.args._encPubKey.map((x) => BigInt(x.toString()))
         )
+
+        const nonce = BigInt(event.args._nonce)
 
         actions.push({
             type: 'PublishMessage',
@@ -279,6 +287,31 @@ const genMaciStateFromContract = async (
             data: {
                 message,
                 encPubKey,
+                nonce,
+            }
+        })
+    }
+
+    for (const log of topupLogs) {
+        assert(log != undefined)
+        const event = pollIface.parseLog(log)
+
+        const message = new Message(
+            BigInt(event.args._message[0]),
+            event.args._message[1].map((x) => BigInt(x)), 
+        )
+
+        const nonce = BigInt(event.args._nonce)
+
+        actions.push({
+            type: 'TopupMessage',
+            // @ts-ignore
+            blockNumber: log.blockNumber,
+            // @ts-ignore
+            transactionIndex: log.transactionIndex,
+            data: {
+                message,
+                nonce,
             }
         })
     }
@@ -386,11 +419,13 @@ const genMaciStateFromContract = async (
             maciState.polls[pollId].publishMessage(
                 action.data.message,
                 action.data.encPubKey,
+                action.data.nonce,
             )
         } else if (action['type'] === 'TopupMessage') {
             maciState.polls[pollId].topupMessage(
+                action.data.message,
+                action.data.nonce,
             )
-        }
         } else if (action['type'] === 'MergeMaciStateAqSubRoots') {
             maciState.stateAq.mergeSubRoots(
                 action.data.numSrQueueOps,
