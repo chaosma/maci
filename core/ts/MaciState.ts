@@ -187,7 +187,19 @@ class Poll {
 
     // Insert topup message into commands
     public topupMessage = (_message: Message) => {
+        assert(_message.msgType == BigInt(2))
+        for (const d of _message.data) {
+            assert(d < SNARK_FIELD_SIZE)
+        }
+        this.messages.push(_message)
+        let emptyPubKey  = new PubKey([BigInt(0),BigInt(0)])
 
+        const messageLeaf = _message.hash()
+        this.messageAq.enqueue(messageLeaf)
+        this.messageTree.insert(messageLeaf)
+
+        const command = new TCommand(_message.data[0],_message.data[1])
+        this.commands.push(command)
     }
 
     /*

@@ -295,7 +295,7 @@ const publish = async (args: any) => {
 
     const encKeypair = new Keypair()
 
-    const command = new PCommand(
+    const command:PCommand = new PCommand(
         stateIndex,
         userMaciPubKey,
         voteOptionIndex,

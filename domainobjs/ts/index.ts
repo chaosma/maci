@@ -382,13 +382,13 @@ interface VoteOptionTreeLeaf {
 class Message {
     public msgType: BigInt
     public data: BigInt[]
-    public static DATA_LENGTH = 10 
+    public static MAX_DATA_LENGTH = 10
 
     constructor (
         msgType: BigInt,
         data: BigInt[],
     ) {
-        assert(data.length === Message.DATA_LENGTH)
+        assert(data.length <= Message.MAX_DATA_LENGTH)
         this.msgType = msgType
         this.data = data
     }
@@ -668,7 +668,6 @@ class StateLeaf implements IStateLeaf {
 class Command {
    public cmdType: BigInt;
    constructor() {
-       throw new Error("Abstract method!")
    }
    public copy = (): Command => {
        throw new Error("Abstract method!")
@@ -684,42 +683,25 @@ class TCommand extends Command {
     public cmdType: BigInt
     public stateIndex: BigInt
     public amount: BigInt
-    public nonce: BigInt
     public pollId: BigInt
-    public salt: BigInt
 
-    constructor(stateIndex: BigInt, amount: BigInt, nonce: BigInt, pollId: BigInt, salt: BigInt = genRandomSalt()) {
+    constructor(stateIndex: BigInt, amount: BigInt) {
         super()
-        const limit50Bits = BigInt(2 ** 50)
-        assert(limit50Bits >= stateIndex)
-        assert(limit50Bits >= amount)
-        assert(limit50Bits >= nonce)
-        assert(limit50Bits >= pollId)
-
         this.cmdType = BigInt(2)
         this.stateIndex = stateIndex
         this.amount = amount
-        this.nonce = nonce
-        this.pollId = pollId
-        this.salt = salt
     }
 
     public copy = (): TCommand => {
         return new TCommand(
             BigInt(this.stateIndex.toString()),
             BigInt(this.amount.toString()),
-            BigInt(this.nonce.toString()),
-            BigInt(this.pollId.toString()),
-            BigInt(this.salt.toString()),
         )
     }
 
     public equals = (command: TCommand): boolean => {
         return this.stateIndex === command.stateIndex &&
-            this.amount === command.amount &&
-            this.nonce === command.nonce &&
-            this.pollId === command.pollId &&
-            this.salt === command.salt
+            this.amount === command.amount
     }
 }
 

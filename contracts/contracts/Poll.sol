@@ -189,8 +189,8 @@ contract Poll is
 
     uint8 private constant LEAVES_PER_NODE = 5;
 
-    event PublishMessage(Message _message, PubKey _encPubKey, uint256 _nonce);
-    event TopupMessage(Message _message, uint256 _nonce);
+    event PublishMessage(Message _message, PubKey _encPubKey);
+    event TopupMessage(Message _message);
     event MergeMaciStateAqSubRoots(uint256 _numSrQueueOps);
     event MergeMaciStateAq(uint256 _stateRoot);
     event MergeMessageAqSubRoots(uint256 _numSrQueueOps);
@@ -260,7 +260,7 @@ contract Poll is
         uint256 messageLeaf = hashTopupMessage(_message);
         extContracts.messageAq.enqueue(messageLeaf);
         numMessages++;
-        emit TopupMessage(_message, numMessages);
+        emit TopupMessage(_message);
     }
 
     /*
@@ -290,7 +290,7 @@ contract Poll is
         extContracts.messageAq.enqueue(messageLeaf);
         numMessages++;
 
-        emit PublishMessage(_message, _encPubKey, numMessages);
+        emit PublishMessage(_message, _encPubKey);
     }
 
     function hashTopupMessage(Message memory _message)

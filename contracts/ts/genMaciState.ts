@@ -276,7 +276,6 @@ const genMaciStateFromContract = async (
             event.args._encPubKey.map((x) => BigInt(x.toString()))
         )
 
-        const nonce = BigInt(event.args._nonce)
 
         actions.push({
             type: 'PublishMessage',
@@ -287,7 +286,6 @@ const genMaciStateFromContract = async (
             data: {
                 message,
                 encPubKey,
-                nonce,
             }
         })
     }
@@ -301,8 +299,6 @@ const genMaciStateFromContract = async (
             event.args._message[1].map((x) => BigInt(x)), 
         )
 
-        const nonce = BigInt(event.args._nonce)
-
         actions.push({
             type: 'TopupMessage',
             // @ts-ignore
@@ -311,7 +307,6 @@ const genMaciStateFromContract = async (
             transactionIndex: log.transactionIndex,
             data: {
                 message,
-                nonce,
             }
         })
     }
@@ -419,12 +414,10 @@ const genMaciStateFromContract = async (
             maciState.polls[pollId].publishMessage(
                 action.data.message,
                 action.data.encPubKey,
-                action.data.nonce,
             )
         } else if (action['type'] === 'TopupMessage') {
             maciState.polls[pollId].topupMessage(
                 action.data.message,
-                action.data.nonce,
             )
         } else if (action['type'] === 'MergeMaciStateAqSubRoots') {
             maciState.stateAq.mergeSubRoots(
@@ -443,6 +436,7 @@ const genMaciStateFromContract = async (
                 treeDepths.messageTreeDepth,
             )
             const poll = maciState.polls[pollId]
+            console.log(`hehe, left=${poll.messageAq.mainRoots[treeDepths.messageTreeDepth]}, right=${action.data.messageRoot}`)
             assert(
                 poll.messageAq.mainRoots[treeDepths.messageTreeDepth] ===
                 action.data.messageRoot
