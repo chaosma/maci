@@ -5,9 +5,15 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract TopupCredit is ERC20, Ownable {
-    uint256 MAXIMUM_AIRDROP_AMOUNT = 100 * 10**18;
+    uint8 private _decimals = 6;
+    uint256 MAXIMUM_AIRDROP_AMOUNT = 100 * 10**_decimals;
 
-    constructor() ERC20("TopupCredit", "TopupCredit") {}
+    constructor() ERC20("TopupCredit", "TopupCredit") {
+    }
+
+    function decimals() public view override returns (uint8) {
+        return _decimals;
+    }
 
     function airdropTo(address account, uint256 amount) public {
         require(amount < MAXIMUM_AIRDROP_AMOUNT);

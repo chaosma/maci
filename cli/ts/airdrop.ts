@@ -57,6 +57,7 @@ const configureSubparser = (subparsers: any) => {
 }
 
 const airdrop = async (args: any) => {
+    let decimals = 6 // default decimal value
 
     let contractAddrs = readJSONFile(contractFilepath)
     if ((!contractAddrs||!contractAddrs["TopupCredit"]) && !args.erc20_contract) {
@@ -83,7 +84,7 @@ const airdrop = async (args: any) => {
         ERC20ContractAbi,
         signer,
     )
-    const amount = args.amount * 10 ** 18
+    const amount = args.amount * 10 ** decimals
     if (amount < 0) {
         console.error('Error: airdrop amount must be greater than 0')
         return 1

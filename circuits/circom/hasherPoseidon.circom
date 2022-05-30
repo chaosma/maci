@@ -72,7 +72,7 @@ template Hasher13() {
     hasher5.inputs[3] <== in[11];
     hasher5.inputs[4] <== in[12];
 
-    hash <== hasher4.out;
+    hash <== hasher5.out;
 }
 
 template HashLeftRight() {

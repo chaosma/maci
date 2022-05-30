@@ -13,7 +13,6 @@ import {
     sign,
     hashLeftRight,
     hash13,
-    hash3,
     hash4,
     hash5,
     verifySignature,
@@ -382,13 +381,13 @@ interface VoteOptionTreeLeaf {
 class Message {
     public msgType: BigInt
     public data: BigInt[]
-    public static MAX_DATA_LENGTH = 10
+    public static DATA_LENGTH = 10
 
     constructor (
         msgType: BigInt,
         data: BigInt[],
     ) {
-        assert(data.length <= Message.MAX_DATA_LENGTH)
+        assert(data.length === Message.DATA_LENGTH)
         this.msgType = msgType
         this.data = data
     }
@@ -410,22 +409,13 @@ class Message {
     }
 
     public hash = (
-        _encPubKey?: PubKey,
+        _encPubKey: PubKey,
     ): BigInt => {
-        if (this.msgType == BigInt(1)) {
-            return hash13([
-                ...[this.msgType],
-                ...this.data,
-                ..._encPubKey.rawPubKey,
-            ])
-        }
-        if (this.msgType == BigInt(2)) {
-            return hash3([
-                ...[this.msgType],
-                ...this.data,
-            ])
-        }
-        return BigInt(0)
+       return hash13([
+           ...[this.msgType],
+           ...this.data,
+           ..._encPubKey.rawPubKey,
+       ])
     }
 
     public copy = (): Message => {

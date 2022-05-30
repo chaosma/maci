@@ -436,7 +436,6 @@ const genMaciStateFromContract = async (
                 treeDepths.messageTreeDepth,
             )
             const poll = maciState.polls[pollId]
-            console.log(`hehe, left=${poll.messageAq.mainRoots[treeDepths.messageTreeDepth]}, right=${action.data.messageRoot}`)
             assert(
                 poll.messageAq.mainRoots[treeDepths.messageTreeDepth] ===
                 action.data.messageRoot

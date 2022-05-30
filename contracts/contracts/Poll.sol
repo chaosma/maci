@@ -253,11 +253,15 @@ contract Poll is
             address(this),
             amount
         );
-        uint256[] memory dat = new uint256[](2);
+        uint256[10] memory dat;
         dat[0] = stateIndex;
         dat[1] = amount;
+        for(uint i = 2; i< 10; i++) {
+            dat[i] = 0;
+        }
+        PubKey memory _padKey = PubKey(PAD_PUBKEY_X, PAD_PUBKEY_Y);
         Message memory _message = Message({msgType: 2, data: dat});
-        uint256 messageLeaf = hashTopupMessage(_message);
+        uint256 messageLeaf = hashMessageAndEncPubKey(_message, _padKey);
         extContracts.messageAq.enqueue(messageLeaf);
         numMessages++;
         emit TopupMessage(_message);
@@ -291,14 +295,6 @@ contract Poll is
         numMessages++;
 
         emit PublishMessage(_message, _encPubKey);
-    }
-
-    function hashTopupMessage(Message memory _message)
-        public
-        pure
-        returns (uint256)
-    {
-        return hash3([_message.msgType, _message.data[0], _message.data[1]]);
     }
 
     function hashMessageAndEncPubKey(

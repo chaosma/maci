@@ -192,9 +192,13 @@ class Poll {
             assert(d < SNARK_FIELD_SIZE)
         }
         this.messages.push(_message)
-        let emptyPubKey  = new PubKey([BigInt(0),BigInt(0)])
+        let padKey = new PubKey([
+                BigInt('10457101036533406547632367118273992217979173478358440826365724437999023779287'),
+                BigInt('19824078218392094440610104313265183977899662750282163392862422243483260492317'),
+            ])
 
-        const messageLeaf = _message.hash()
+        this.encPubKeys.push(padKey)
+        const messageLeaf = _message.hash(padKey)
         this.messageAq.enqueue(messageLeaf)
         this.messageTree.insert(messageLeaf)
 
@@ -355,89 +359,143 @@ class Poll {
 
         const currentVoteWeights: BigInt[] = []
         const currentVoteWeightsPathElements: any[] = []
+        const topupAmounts: BigInt[] = []
+        const topupStateIndexes: BigInt[] = []
 
         for (let i = 0; i < batchSize; i ++) {
-            const m = this.currentMessageBatchIndex + batchSize - i - 1
+            const idx = this.currentMessageBatchIndex + batchSize - i - 1
+            const message = this.messages[idx]
+            switch(message.msgType) {
+                case BigInt(1):
+                    try{
+                        // still needed for top message
+                        topupAmounts.unshift(BigInt(0))
+                        topupStateIndexes.unshift(BigInt(0))
 
-            try{
-                // If the command is valid
-              
-                const r = this.processMessage(m)
-                // console.log(messageIndex, r ? 'valid' : 'invalid')
-                // console.log("r:"+r.newStateLeaf )
-                // DONE: replace with try/catch after implementing error
-                // handling
-                const index = r.stateLeafIndex
+                        // If the command is valid
+                        const r = this.processMessage(idx)
+                        // console.log(messageIndex, r ? 'valid' : 'invalid')
+                        // console.log("r:"+r.newStateLeaf )
+                        // DONE: replace with try/catch after implementing error
+                        // handling
+                        const index = r.stateLeafIndex
+        
+                        currentStateLeaves.unshift(r.originalStateLeaf)
+                        currentBallots.unshift(r.originalBallot)
+                        currentVoteWeights.unshift(r.originalVoteWeight)
+                        currentVoteWeightsPathElements.unshift(r.originalVoteWeightsPathElements)
+        
+                        currentStateLeavesPathElements.unshift(r.originalStateLeafPathElements)
+                        currentBallotsPathElements.unshift(r.originalBallotPathElements)
+        
+                        this.stateLeaves[index] = r.newStateLeaf.copy()
+                        this.stateTree.update(index, r.newStateLeaf.hash())
+        
+                        this.ballots[index] = r.newBallot
+                        this.ballotTree.update(index, r.newBallot.hash())
+        
+                    }catch(e){
+                        if (e.message === 'no-op') {
+                              // Since the command is invalid, use a blank state leaf
+                              currentStateLeaves.unshift(this.stateLeaves[0].copy())
+                              currentStateLeavesPathElements.unshift(
+                                  this.stateTree.genMerklePath(0).pathElements
+                              )
+        
+                              currentBallots.unshift(this.ballots[0].copy())
+                              currentBallotsPathElements.unshift(
+                                  this.ballotTree.genMerklePath(0).pathElements
+                              )
+        
+                              // Since the command is invalid, use vote option index 0
+                              currentVoteWeights.unshift(this.ballots[0].votes[0])
+        
+                              // No need to iterate through the entire votes array if the
+                              // remaining elements are 0
+                              let lastIndexToInsert = this.ballots[0].votes.length - 1
+                              while (lastIndexToInsert > 0) {
+                                  if (this.ballots[0].votes[lastIndexToInsert] === BigInt(0)) {
+                                      lastIndexToInsert --
+                                  } else {
+                                      break
+                                  }
+                              }
+        
+                              const vt = new IncrementalQuinTree(
+                                  this.treeDepths.voteOptionTreeDepth,
+                                  BigInt(0),
+                                  5,
+                                  hash5,
+                              )
+                              for (let i = 0; i <= lastIndexToInsert; i ++) {
+                                  vt.insert(this.ballots[0].votes[i])
+                              }
+                              currentVoteWeightsPathElements.unshift(
+                                  vt.genMerklePath(0).pathElements
+                              )
+                       
+        
+                        } else {
+                            throw e
+                        }
+                    }
+                    break
+                case BigInt(2):
+                    let stateIndex = BigInt(message.data[0])
+                    topupStateIndexes.unshift(stateIndex)
+                    let amount = BigInt(message.data[1])
+                    topupAmounts.unshift(amount)
 
-                currentStateLeaves.unshift(r.originalStateLeaf)
-                currentBallots.unshift(r.originalBallot)
-                currentVoteWeights.unshift(r.originalVoteWeight)
-                currentVoteWeightsPathElements.unshift(r.originalVoteWeightsPathElements)
+                    currentStateLeaves.unshift(this.stateLeaves[Number(stateIndex)].copy())
+                    currentStateLeavesPathElements.unshift(
+                        this.stateTree.genMerklePath(Number(stateIndex)).pathElements
+                    )
 
-                currentStateLeavesPathElements.unshift(r.originalStateLeafPathElements)
-                currentBallotsPathElements.unshift(r.originalBallotPathElements)
-
-                this.stateLeaves[index] = r.newStateLeaf.copy()
-                this.stateTree.update(index, r.newStateLeaf.hash())
-
-                this.ballots[index] = r.newBallot
-                this.ballotTree.update(index, r.newBallot.hash())
-
-            }catch(e){
-                if (e.message === 'no-op') {
-
-                      // Since the command is invalid, use a blank state leaf
-                      currentStateLeaves.unshift(this.stateLeaves[0].copy())
-                      currentStateLeavesPathElements.unshift(
-                          this.stateTree.genMerklePath(0).pathElements
-                      )
-
-                      currentBallots.unshift(this.ballots[0].copy())
-                      currentBallotsPathElements.unshift(
-                          this.ballotTree.genMerklePath(0).pathElements
-                      )
-
-                      // Since the command is invalid, use vote option index 0
-                      currentVoteWeights.unshift(this.ballots[0].votes[0])
-
-                      // No need to iterate through the entire votes array if the
-                      // remaining elements are 0
-                      let lastIndexToInsert = this.ballots[0].votes.length - 1
-                      while (lastIndexToInsert > 0) {
-                          if (this.ballots[0].votes[lastIndexToInsert] === BigInt(0)) {
-                              lastIndexToInsert --
-                          } else {
-                              break
-                          }
-                      }
-
-                      const vt = new IncrementalQuinTree(
-                          this.treeDepths.voteOptionTreeDepth,
-                          BigInt(0),
-                          5,
-                          hash5,
-                      )
-                      for (let i = 0; i <= lastIndexToInsert; i ++) {
-                          vt.insert(this.ballots[0].votes[i])
-                      }
-                      currentVoteWeightsPathElements.unshift(
-                          vt.genMerklePath(0).pathElements
-                      )
-               
-
-                } else {
-                    throw e
-                }
-            }
-
-          
+                    // still need to generate other vote type message circuit inputs
+                    // it's invalid anyway
+                    currentBallots.unshift(this.ballots[0].copy())
+                    currentBallotsPathElements.unshift(
+                        this.ballotTree.genMerklePath(0).pathElements
+                    )
+                    // Since the command is invalid, use vote option index 0
+                    currentVoteWeights.unshift(this.ballots[0].votes[0])
+                    // No need to iterate through the entire votes array if the
+                    // remaining elements are 0
+                    let lastIndexToInsert = this.ballots[0].votes.length - 1
+                    while (lastIndexToInsert > 0) {
+                        if (this.ballots[0].votes[lastIndexToInsert] === BigInt(0)) {
+                            lastIndexToInsert --
+                        } else {
+                            break
+                        }
+                    }
+                    const vt = new IncrementalQuinTree(
+                        this.treeDepths.voteOptionTreeDepth,
+                        BigInt(0),
+                        5,
+                        hash5,
+                    )
+                    for (let i = 0; i <= lastIndexToInsert; i ++) {
+                        vt.insert(this.ballots[0].votes[i])
+                    }
+                    currentVoteWeightsPathElements.unshift(
+                        vt.genMerklePath(0).pathElements
+                    )
+                    break
+                default:
+                    break
+            } // end msgType switch
         }
+
+        // loop for batch
         circuitInputs.currentStateLeaves = currentStateLeaves.map((x) => x.asCircuitInputs())
         circuitInputs.currentStateLeavesPathElements = currentStateLeavesPathElements
         circuitInputs.currentBallots = currentBallots.map((x) => x.asCircuitInputs())
         circuitInputs.currentBallotsPathElements = currentBallotsPathElements
         circuitInputs.currentVoteWeights = currentVoteWeights
         circuitInputs.currentVoteWeightsPathElements = currentVoteWeightsPathElements
+        circuitInputs.topupAmounts = topupAmounts.map((x) => BigInt(x.toString()))
+        circuitInputs.topupStateIndexes = topupStateIndexes.map((x) => BigInt(x.toString()))
 
         this.numBatchesProcessed ++
 
