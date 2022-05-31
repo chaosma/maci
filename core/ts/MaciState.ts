@@ -361,6 +361,8 @@ class Poll {
         const currentVoteWeightsPathElements: any[] = []
         const topupAmounts: BigInt[] = []
         const topupStateIndexes: BigInt[] = []
+        const topupStateLeaves: StateLeaf[] = []
+        const topupStateLeavesPathElements: any[] = []
 
         for (let i = 0; i < batchSize; i ++) {
             const idx = this.currentMessageBatchIndex + batchSize - i - 1
@@ -371,6 +373,10 @@ class Poll {
                         // still needed for top message
                         topupAmounts.unshift(BigInt(0))
                         topupStateIndexes.unshift(BigInt(0))
+                        topupStateLeaves.unshift(this.stateLeaves[0].copy())
+                        topupStateLeavesPathElements.unshift(
+                            this.stateTree.genMerklePath(0).pathElements
+                        )
 
                         // If the command is valid
                         const r = this.processMessage(idx)
@@ -446,13 +452,17 @@ class Poll {
                     let amount = BigInt(message.data[1])
                     topupAmounts.unshift(amount)
 
-                    currentStateLeaves.unshift(this.stateLeaves[Number(stateIndex)].copy())
-                    currentStateLeavesPathElements.unshift(
+                    topupStateLeaves.unshift(this.stateLeaves[Number(stateIndex)].copy())
+                    topupStateLeavesPathElements.unshift(
                         this.stateTree.genMerklePath(Number(stateIndex)).pathElements
                     )
 
                     // still need to generate other vote type message circuit inputs
                     // it's invalid anyway
+                    currentStateLeaves.unshift(this.stateLeaves[0].copy())
+                    currentStateLeavesPathElements.unshift(
+                        this.stateTree.genMerklePath(0).pathElements
+                    )
                     currentBallots.unshift(this.ballots[0].copy())
                     currentBallotsPathElements.unshift(
                         this.ballotTree.genMerklePath(0).pathElements
@@ -496,6 +506,8 @@ class Poll {
         circuitInputs.currentVoteWeightsPathElements = currentVoteWeightsPathElements
         circuitInputs.topupAmounts = topupAmounts.map((x) => BigInt(x.toString()))
         circuitInputs.topupStateIndexes = topupStateIndexes.map((x) => BigInt(x.toString()))
+        circuitInputs.topupStateLeaves = topupStateLeaves.map((x) => x.asCircuitInputs())
+        circuitInputs.topupStateLeavesPathElements = topupStateLeavesPathElements
 
         this.numBatchesProcessed ++
 

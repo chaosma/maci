@@ -94,6 +94,8 @@ template ProcessMessages(
     // topup signals
     signal input topupAmounts[batchSize];
     signal input topupStateIndexes[batchSize];
+    signal input topupStateLeaves[batchSize][STATE_LEAF_LENGTH];
+    signal input topupStateLeavesPathElements[batchSize][stateTreeDepth][TREE_ARITY - 1];
 
     // The state leaves upon which messages are applied.
     //     transform(currentStateLeaf[4], message5) => newStateLeaf4
@@ -331,12 +333,12 @@ template ProcessMessages(
         processors2[i].amount <== topupAmounts[i];
         processors2[i].numSignUps <== numSignUps;
         for (var j = 0; j < STATE_LEAF_LENGTH; j ++) {
-            processors2[i].stateLeaf[j] <== currentStateLeaves[i][j];
+            processors2[i].stateLeaf[j] <== topupStateLeaves[i][j];
         }
         for (var j = 0; j < stateTreeDepth; j ++) {
             for (var k = 0; k < TREE_ARITY - 1; k ++) {
                 processors2[i].stateLeafPathElements[j][k] 
-                    <== currentStateLeavesPathElements[i][j][k];
+                    <== topupStateLeavesPathElements[i][j][k];
             }
         }
         // pick the correct result by msg type
