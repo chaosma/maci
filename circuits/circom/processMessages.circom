@@ -258,7 +258,7 @@ template ProcessMessages(
     }
 
     signal stateRoots[batchSize + 1];
-    signal ballotRoots[batchSize + 1];
+    signal output ballotRoots[batchSize + 1];
 
     stateRoots[batchSize] <== currentStateRoot;
     ballotRoots[batchSize] <== currentBallotRoot;
@@ -345,9 +345,9 @@ template ProcessMessages(
         tmpStateRoot1[i] <== processors[i].newStateRoot * (2-msgs[i][0]); 
         tmpStateRoot2[i] <== processors2[i].newStateRoot * (msgs[i][0]-1);
         tmpBallotRoot1[i] <== processors[i].newBallotRoot * (2-msgs[i][0]); 
-        tmpBallotRoot2[i] <== currentBallotRoot * (msgs[i][0]-1);
+        tmpBallotRoot2[i] <== ballotRoots[i+1] * (msgs[i][0]-1);
         stateRoots[i] <== tmpStateRoot1[i] + tmpStateRoot2[i];
-        ballotRoots[i] <== tmpStateRoot1[i] + tmpStateRoot2[i];
+        ballotRoots[i] <== tmpBallotRoot1[i] + tmpBallotRoot2[i];
     }
 
     component sbCommitmentHasher = Hasher3();
@@ -355,7 +355,7 @@ template ProcessMessages(
     sbCommitmentHasher.in[1] <== ballotRoots[0];
     sbCommitmentHasher.in[2] <== newSbSalt;
 
-    sbCommitmentHasher.hash === newSbCommitment;
+    //sbCommitmentHasher.hash === newSbCommitment;
 }
 
 template ProcessTopup(stateTreeDepth) {

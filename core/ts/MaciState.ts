@@ -366,7 +366,13 @@ class Poll {
 
         for (let i = 0; i < batchSize; i ++) {
             const idx = this.currentMessageBatchIndex + batchSize - i - 1
-            const message = this.messages[idx]
+            assert(idx >= 0)
+            let message
+            if (idx >= this.messages.length) {
+                message = new Message(BigInt(1), Array(10).fill(BigInt(0))) // when idx large than actual size, just use something to pass to switch 
+            } else {
+                message = this.messages[idx]
+            }
             switch(message.msgType) {
                 case BigInt(1):
                     try{
@@ -447,54 +453,96 @@ class Poll {
                     }
                     break
                 case BigInt(2):
-                    let stateIndex = BigInt(message.data[0])
-                    topupStateIndexes.unshift(stateIndex)
-                    let amount = BigInt(message.data[1])
-                    topupAmounts.unshift(amount)
+                    try {
+                        
+                         // still need to generate vote type message circuit inputs
+                         currentStateLeaves.unshift(this.stateLeaves[0].copy())
+                         currentStateLeavesPathElements.unshift(
+                             this.stateTree.genMerklePath(0).pathElements
+                         )
+                         currentBallots.unshift(this.ballots[0].copy())
+                         currentBallotsPathElements.unshift(
+                             this.ballotTree.genMerklePath(0).pathElements
+                         )
+                         // Since the command is invalid, use vote option index 0
+                         currentVoteWeights.unshift(this.ballots[0].votes[0])
+                         // No need to iterate through the entire votes array if the
+                         // remaining elements are 0
+                         let lastIndexToInsert = this.ballots[0].votes.length - 1
+                         while (lastIndexToInsert > 0) {
+                             if (this.ballots[0].votes[lastIndexToInsert] === BigInt(0)) {
+                                 lastIndexToInsert --
+                             } else {
+                                 break
+                             }
+                         }
+                         const vt = new IncrementalQuinTree(
+                             this.treeDepths.voteOptionTreeDepth,
+                             BigInt(0),
+                             5,
+                             hash5,
+                         )
+                         for (let i = 0; i <= lastIndexToInsert; i ++) {
+                             vt.insert(this.ballots[0].votes[i])
+                         }
+                         currentVoteWeightsPathElements.unshift(
+                             vt.genMerklePath(0).pathElements
+                         )
 
-                    topupStateLeaves.unshift(this.stateLeaves[Number(stateIndex)].copy())
-                    topupStateLeavesPathElements.unshift(
-                        this.stateTree.genMerklePath(Number(stateIndex)).pathElements
-                    )
+                        // --------------------------------------
+                        // generate topup circuit inputs
+                        let stateIndex = BigInt(message.data[0])
+                        let amount = BigInt(message.data[1])
+                        console.log(`hehe, numSignup=${this.numSignUps},ballotlen=${this.ballots.length}, stateIndex=${stateIndex}`)
 
-                    // still need to generate other vote type message circuit inputs
-                    // it's invalid anyway
-                    currentStateLeaves.unshift(this.stateLeaves[0].copy())
-                    currentStateLeavesPathElements.unshift(
-                        this.stateTree.genMerklePath(0).pathElements
-                    )
-                    currentBallots.unshift(this.ballots[0].copy())
-                    currentBallotsPathElements.unshift(
-                        this.ballotTree.genMerklePath(0).pathElements
-                    )
-                    // Since the command is invalid, use vote option index 0
-                    currentVoteWeights.unshift(this.ballots[0].votes[0])
-                    // No need to iterate through the entire votes array if the
-                    // remaining elements are 0
-                    let lastIndexToInsert = this.ballots[0].votes.length - 1
-                    while (lastIndexToInsert > 0) {
-                        if (this.ballots[0].votes[lastIndexToInsert] === BigInt(0)) {
-                            lastIndexToInsert --
+                        // Decrypt the message
+//                        let encPubKey = this.encPubKeys[Number(stateIndex)]
+//                        const sharedKey = Keypair.genEcdhSharedKey(
+//                            this.coordinatorKeypair.privKey,
+//                            encPubKey,
+//                        )
+//                        const { command, signature } = PCommand.decrypt(message, sharedKey)
+//                        console.log(`hehe, command=${command}, signature=${signature}`)
+
+
+                        if (
+                            stateIndex >= BigInt(this.ballots.length) ||
+                            stateIndex < BigInt(1) ||
+                            amount < BigInt(1)
+                        ) {
+                            throw Error("no-op")
+                            return {}
+                        }
+                        topupStateIndexes.unshift(stateIndex)
+                        topupAmounts.unshift(amount)
+                        topupStateLeaves.unshift(this.stateLeaves[Number(stateIndex)].copy())
+                        topupStateLeavesPathElements.unshift(
+                            this.stateTree.genMerklePath(Number(stateIndex)).pathElements
+                        )
+
+                        const newStateLeaf = this.stateLeaves[Number(stateIndex)].copy()
+                        newStateLeaf.voiceCreditBalance = BigInt(newStateLeaf.voiceCreditBalance) + BigInt(amount)
+                        this.stateLeaves[Number(stateIndex)] = newStateLeaf
+                        this.stateTree.update(Number(stateIndex), newStateLeaf.hash())
+    
+                        
+                    } catch(e) {
+                        if (e.message === "no-op") {
+                            topupAmounts.unshift(BigInt(0))
+                            topupStateIndexes.unshift(BigInt(0))
+                            topupStateLeaves.unshift(this.stateLeaves[0].copy())
+                            topupStateLeavesPathElements.unshift(
+                                this.stateTree.genMerklePath(0).pathElements
+                            )
                         } else {
-                            break
+                            throw e
                         }
                     }
-                    const vt = new IncrementalQuinTree(
-                        this.treeDepths.voteOptionTreeDepth,
-                        BigInt(0),
-                        5,
-                        hash5,
-                    )
-                    for (let i = 0; i <= lastIndexToInsert; i ++) {
-                        vt.insert(this.ballots[0].votes[i])
-                    }
-                    currentVoteWeightsPathElements.unshift(
-                        vt.genMerklePath(0).pathElements
-                    )
                     break
                 default:
                     break
             } // end msgType switch
+            console.log(`hehe, idx=${idx}, ballotRoot=${this.ballotTree.root}`)
         }
 
         // loop for batch
@@ -522,6 +570,8 @@ class Poll {
         circuitInputs.newSbSalt = newSbSalt
         const newStateRoot = this.stateTree.root
         const newBallotRoot = this.ballotTree.root
+        console.log(`hehe: newStateRoot=${newStateRoot}`)
+        console.log(`hehe: newBallotRoot=${newBallotRoot}`)
         circuitInputs.newSbCommitment = hash3([
             newStateRoot,
             newBallotRoot,
@@ -597,12 +647,6 @@ class Poll {
             encPubKeys.push(encPubKeys[encPubKeys.length - 1])
         }
         encPubKeys = encPubKeys.slice(_index, _index + messageBatchSize)
-
-        const stateIndices: number[] = []
-        for (let i = 0; i < messageBatchSize; i ++) {
-            const stateIndex = Number((commands[i] as PCommand).stateIndex)
-            stateIndices.push(stateIndex)
-        }
 
         const msgRoot = this.messageAq.getRoot(this.treeDepths.messageTreeDepth)
 

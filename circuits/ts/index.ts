@@ -33,6 +33,7 @@ const genProof = (
 
     // Generate the witness
     const witnessGenCmd = `${witnessExePath} ${inputJsonPath} ${outputWtnsPath}`
+    console.log(`hehe witnessGenCmd: ${witnessGenCmd}`)
 
     const witnessGenOutput = shelljs.exec(witnessGenCmd, { silent })
     if (witnessGenOutput.stderr) {
@@ -56,18 +57,18 @@ const genProof = (
     const proof = JSON.parse(fs.readFileSync(proofJsonPath).toString())
     const publicInputs = JSON.parse(fs.readFileSync(publicJsonPath).toString())
 
-    // Delete the temp files and the temp directory
-    for (const f of [
-        proofJsonPath,
-        publicJsonPath,
-        inputJsonPath,
-        outputWtnsPath,
-    ]) {
-        if (fs.existsSync(f)) {
-            fs.unlinkSync(f)
-        }
-    }
-    tmpObj.removeCallback()
+    //hehe Delete the temp files and the temp directory
+//    for (const f of [
+//        proofJsonPath,
+//        publicJsonPath,
+//        inputJsonPath,
+//        outputWtnsPath,
+//    ]) {
+//        if (fs.existsSync(f)) {
+//            fs.unlinkSync(f)
+//        }
+//    }
+    //tmpObj.removeCallback()
 
     return { proof, publicInputs }
 }
