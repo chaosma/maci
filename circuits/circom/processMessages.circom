@@ -258,7 +258,7 @@ template ProcessMessages(
     }
 
     signal stateRoots[batchSize + 1];
-    signal output ballotRoots[batchSize + 1];
+    signal ballotRoots[batchSize + 1];
 
     stateRoots[batchSize] <== currentStateRoot;
     ballotRoots[batchSize] <== currentBallotRoot;
@@ -355,7 +355,7 @@ template ProcessMessages(
     sbCommitmentHasher.in[1] <== ballotRoots[0];
     sbCommitmentHasher.in[2] <== newSbSalt;
 
-    //sbCommitmentHasher.hash === newSbCommitment;
+    sbCommitmentHasher.hash === newSbCommitment;
 }
 
 template ProcessTopup(stateTreeDepth) {

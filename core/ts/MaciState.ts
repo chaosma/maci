@@ -493,17 +493,6 @@ class Poll {
                         // generate topup circuit inputs
                         let stateIndex = BigInt(message.data[0])
                         let amount = BigInt(message.data[1])
-                        console.log(`hehe, numSignup=${this.numSignUps},ballotlen=${this.ballots.length}, stateIndex=${stateIndex}`)
-
-                        // Decrypt the message
-//                        let encPubKey = this.encPubKeys[Number(stateIndex)]
-//                        const sharedKey = Keypair.genEcdhSharedKey(
-//                            this.coordinatorKeypair.privKey,
-//                            encPubKey,
-//                        )
-//                        const { command, signature } = PCommand.decrypt(message, sharedKey)
-//                        console.log(`hehe, command=${command}, signature=${signature}`)
-
 
                         if (
                             stateIndex >= BigInt(this.ballots.length) ||
@@ -542,7 +531,6 @@ class Poll {
                 default:
                     break
             } // end msgType switch
-            console.log(`hehe, idx=${idx}, ballotRoot=${this.ballotTree.root}`)
         }
 
         // loop for batch
@@ -570,8 +558,6 @@ class Poll {
         circuitInputs.newSbSalt = newSbSalt
         const newStateRoot = this.stateTree.root
         const newBallotRoot = this.ballotTree.root
-        console.log(`hehe: newStateRoot=${newStateRoot}`)
-        console.log(`hehe: newBallotRoot=${newBallotRoot}`)
         circuitInputs.newSbCommitment = hash3([
             newStateRoot,
             newBallotRoot,
