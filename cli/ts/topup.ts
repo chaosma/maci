@@ -60,8 +60,6 @@ const configureSubparser = (subparsers: any) => {
 }
 
 const topup = async (args: any) => {
-    let decimals = 6 // default decimal value
-
     let contractAddrs = readJSONFile(contractFilepath)
     if ((!contractAddrs||!contractAddrs["MACI"]) && !args.contract) {
         console.error('Error: MACI contract address is empty') 
@@ -82,7 +80,7 @@ const topup = async (args: any) => {
         return 1
     }
 
-    const amount = args.amount * 10 ** decimals
+    const amount = args.amount 
     if (amount < 0) {
         console.error('Error: topup amount must be greater than 0')
         return 1
