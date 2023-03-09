@@ -87,7 +87,6 @@ contract Subsidy is
     ) external onlyOwner {
         _votingPeriodOver(_poll);
         updateSbCommitment(_mp);
-        subsidyCommitment = _newSubsidyCommitment;
 
         (uint8 intStateTreeDepth, , , uint8 voteOptionTreeDepth) = _poll
             .treeDepths();
@@ -114,6 +113,7 @@ contract Subsidy is
         if (!isValid) {
             revert INVALID_SUBSIDY_PROOF();
         }
+        subsidyCommitment = _newSubsidyCommitment;
         increaseSubsidyIndex(subsidyBatchSize, numLeaves);
     }
 
