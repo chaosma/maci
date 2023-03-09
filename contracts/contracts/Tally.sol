@@ -123,6 +123,9 @@ contract Tally is
         _votingPeriodOver(_poll);
         updateSbCommitment(_mp);
 
+        // Update the tally commitment and the tally batch num
+        tallyCommitment = _newTallyCommitment;
+
         (, uint256 tallyBatchSize, ) = _poll.batchSizes();
         uint256 batchStartIndex = tallyBatchNum * tallyBatchSize;
         (uint256 numSignUps, ) = _poll.numSignUpsAndMessages();
@@ -144,8 +147,6 @@ contract Tally is
             revert INVALID_TALLY_VOTES_PROOF();
         }
 
-        // Update the tally commitment and the tally batch num
-        tallyCommitment = _newTallyCommitment;
         tallyBatchNum++;
     }
 
