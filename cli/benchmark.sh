@@ -1,11 +1,11 @@
 #!/bin/bash
 # benchmark test different params
 
-stateTreeDepth=10
-intStateTreeDepth=1
-msgTreeDepth=2
-voteOptionTreeDepth=2
-msgBatchDepth=1
+stateTreeDepth=7
+intStateTreeDepth=2
+msgTreeDepth=7
+voteOptionTreeDepth=3
+msgBatchDepth=2
 
 
 cordpk=macipk.c974f4f168b79727ac98bfd53a65ea0b4e45dc2552fe73df9f8b51ebb0930330 
@@ -17,7 +17,7 @@ duration=120
 #maxVoteOption=$((5 ** $voteOptionTreeDepth))
 maxVoteOption=25
 #maxMsg=$((5 ** $msgTreeDepth))
-maxMsg=20
+maxMsg=50
 
 maxSignUp=6
 votePerUser=2
@@ -109,4 +109,13 @@ node build/index.js genProofs \
 end=`date +%s`
 runtime=$((end-start))
 echo "---------gen proof costs: "$runtime" seconds"
+
+echo "prove on chain ..."
+start=`date +%s`
+node build/index.js proveOnChain \
+    -o 0   \
+    -f proofs/
+end=`date +%s`
+runtime=$((end-start))
+echo "----------prove on chain costs: "$runtime" seconds"
 

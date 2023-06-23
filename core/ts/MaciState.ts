@@ -43,7 +43,7 @@ interface MaxValues {
     maxVoteOptions: number;
 }
 
-const STATE_TREE_DEPTH = 10
+const STATE_TREE_DEPTH = 7
 
 // Also see: Polls.sol
 class Poll {

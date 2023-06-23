@@ -116,11 +116,6 @@ const genProofs = async (args: any) => {
         fs.mkdirSync(outputDir)
     }
 
-    if (fs.existsSync(args.tally_file)) {
-        console.error(`Error: ${args.tally_file} exists. Please specify a different filepath.`)
-        return 1
-    }
-
     const rapidsnarkExe = args.rapidsnark
     const processDatFile = args.process_witnessgen + ".dat"
     const [ok, path] = isPathExist([
@@ -257,8 +252,6 @@ const genProofs = async (args: any) => {
 
     // TODO: support resumable proof generation
     const processProofs: any[] = []
-    const tallyProofs: any[] = []
-    const subsidyProofs: any[] = []
 
     let startTime = Date.now()
     console.log('Generating proofs of message processing...')

@@ -22,7 +22,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 contract MACI is IMACI, DomainObjs, Params, SnarkCommon, Ownable {
     // The state tree depth is fixed. As such it should be as large as feasible
     // so that there can be as many users as possible.  i.e. 5 ** 10 = 9765625
-    uint8 public constant override stateTreeDepth = 10;
+    uint8 public constant override stateTreeDepth = 7;
 
     // IMPORTANT: remember to change the ballot tree depth 
     // in contracts/ts/genEmptyBallotRootsContract.ts file
