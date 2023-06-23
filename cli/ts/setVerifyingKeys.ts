@@ -85,25 +85,6 @@ const configureSubparser = (subparsers: any) => {
             help: 'The .zkey file for the message processing circuit. '
         }
     )
-
-    createParser.addArgument(
-        ['-t', '--tally-votes-zkey'],
-        {
-            action: 'store',
-            type: 'string',
-            required: true,
-            help: 'The .zkey file for the vote tallying circuit. '
-        }
-    )
-    
-    createParser.addArgument(
-        ['-ss', '--subsidy-zkey'],
-        {
-            action: 'store',
-            type: 'string',
-            help: 'The .zkey file for the subsidy circuit. '
-        }
-    )
 }
 
 const setVerifyingKeys = async (args: any) => {
@@ -121,31 +102,7 @@ const setVerifyingKeys = async (args: any) => {
     const msgBatchDepth = args.msg_batch_depth
 
     const pmZkeyFile = path.resolve(args.process_messages_zkey)
-    const tvZkeyFile = path.resolve(args.tally_votes_zkey)
-    if (!fs.existsSync(pmZkeyFile)) {
-        console.error(`Error: ${pmZkeyFile} does not exist.`)
-        return 1
-    }
-    if (!fs.existsSync(tvZkeyFile)) {
-        console.error(`Error: ${tvZkeyFile} does not exist.`)
-        return 1
-    }
-
     const processVk: VerifyingKey = VerifyingKey.fromObj(extractVk(pmZkeyFile))
-    const tallyVk: VerifyingKey = VerifyingKey.fromObj(extractVk(tvZkeyFile))
-
-
-    let ssZkeyFile: string
-    let subsidyVk:VerifyingKey
-    if (args.subsidy_zkey) {
-        ssZkeyFile = path.resolve(args.subsidy_zkey)
-        if (!fs.existsSync(ssZkeyFile)) {
-            console.error(`Error: ${ssZkeyFile} does not exist.`)
-            return 1
-        }
-
-        subsidyVk = VerifyingKey.fromObj(extractVk(ssZkeyFile))
-    }
 
     // Simple validation
     if (
@@ -175,24 +132,11 @@ const setVerifyingKeys = async (args: any) => {
     const pmMsgBatchDepth = Number(pmMatch[3])
     const pmVoteOptionTreeDepth = Number(pmMatch[4])
 
-    const tvMatch = tvZkeyFile.match(/.+_(\d+)-(\d+)-(\d+)_/)
-    if (tvMatch == null) {
-        console.error(`Error: ${tvZkeyFile} has an invalid filename`)
-        return 1
-    }
-    const tvStateTreeDepth = Number(tvMatch[1])
-    const tvIntStateTreeDepth = Number(tvMatch[2])
-    const tvVoteOptionTreeDepth = Number(tvMatch[3])
     if (
         stateTreeDepth !== pmStateTreeDepth ||
         msgTreeDepth !== pmMsgTreeDepth ||
         msgBatchDepth !== pmMsgBatchDepth ||
-        voteOptionTreeDepth !== pmVoteOptionTreeDepth ||
-
-        stateTreeDepth != tvStateTreeDepth ||
-        intStateTreeDepth != tvIntStateTreeDepth ||
-        voteOptionTreeDepth != tvVoteOptionTreeDepth 
-
+        voteOptionTreeDepth !== pmVoteOptionTreeDepth
     ) {
         console.error('Error: incorrect .zkey file; please check the circuit params')
         return 1
@@ -232,48 +176,6 @@ const setVerifyingKeys = async (args: any) => {
         return 1
     }
 
-    // Query the contract to see if the tallyVk has been set
-    const tallyVkSig = genTallyVkSig(
-        stateTreeDepth,
-        intStateTreeDepth,
-        voteOptionTreeDepth,
-    )
-
-    const isTallyVkSet = await vkRegistryContract.isTallyVkSet(tallyVkSig)
-    if (isTallyVkSet ) {
-        console.error('Error: this tally verifying key is already set in the contract')
-        return 1
-    }
-
-    if (args.subsidy_zkey) {
-        const ssMatch = ssZkeyFile.match(/.+_(\d+)-(\d+)-(\d+)_/)
-        if (ssMatch == null) {
-            console.error(`Error: ${ssZkeyFile} has an invalid filename`)
-            return 1
-        }
-        const ssStateTreeDepth = Number(ssMatch[1])
-        const ssIntStateTreeDepth = Number(ssMatch[2])
-        const ssVoteOptionTreeDepth = Number(ssMatch[3])
-        if (
-        stateTreeDepth != ssStateTreeDepth ||
-        intStateTreeDepth != ssIntStateTreeDepth ||
-        voteOptionTreeDepth != ssVoteOptionTreeDepth
-        ) {
-            console.error('Error: incorrect .zkey file; please check the circuit params')
-            return 1
-        }
-        const subsidyVkSig = genSubsidyVkSig(
-            stateTreeDepth,
-            intStateTreeDepth,
-            voteOptionTreeDepth,
-        )
-        const isSubsidyVkSet = await vkRegistryContract.isSubsidyVkSet(subsidyVkSig)
-        if (isSubsidyVkSet ) {
-            console.error('Error: this subsidy verifying key is already set in the contract')
-            return 1
-        }
-    }
-
     try {
         console.log('Setting verifying keys...')
         const tx = await vkRegistryContract.setVerifyingKeys(
@@ -282,8 +184,7 @@ const setVerifyingKeys = async (args: any) => {
             msgTreeDepth,
             voteOptionTreeDepth,
             5 ** msgBatchDepth,
-            processVk.asContractParam(),
-            tallyVk.asContractParam()
+            processVk.asContractParam()
         )
 
         const receipt = await tx.wait()
@@ -300,46 +201,9 @@ const setVerifyingKeys = async (args: any) => {
             messageBatchSize,
         )
 
-        const tallyVkOnChain = await vkRegistryContract.getTallyVk(
-            stateTreeDepth,
-            intStateTreeDepth,
-            voteOptionTreeDepth,
-        )
-
         if (!compareVks(processVk, processVkOnChain)) {
             console.error('Error: processVk mismatch')
             return 1
-        }
-        if (!compareVks(tallyVk, tallyVkOnChain)) {
-            console.error('Error: tallyVk mismatch')
-            return 1
-        }
-
-        if (args.subsidy_zkey) {
-            console.log('Setting subsidy keys...')
-            const tx = await vkRegistryContract.setSubsidyKeys(
-                stateTreeDepth,
-                intStateTreeDepth,
-                voteOptionTreeDepth,
-                subsidyVk.asContractParam()
-            )
-    
-            const receipt = await tx.wait()
-            if (receipt.status !== 1) {
-                console.error('Error: set subsidy keys transaction failed')
-            }
-    
-            console.log('Transaction hash:', tx.hash)
-
-            const subsidyVkOnChain = await vkRegistryContract.getSubsidyVk(
-                stateTreeDepth,
-                intStateTreeDepth,
-                voteOptionTreeDepth,
-            )
-            if (!compareVks(subsidyVk, subsidyVkOnChain)) {
-                console.error('Error: subsidyVk mismatch')
-                return 1
-            }
         }
 
         return 0

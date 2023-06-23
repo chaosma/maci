@@ -77,8 +77,7 @@ contract VkRegistry is Ownable, SnarkCommon {
         uint256 _messageTreeDepth,
         uint256 _voteOptionTreeDepth,
         uint256 _messageBatchSize,
-        VerifyingKey memory _processVk,
-        VerifyingKey memory _tallyVk
+        VerifyingKey memory _processVk
     ) public onlyOwner {
 
         uint256 processVkSig = genProcessVkSig(
@@ -109,17 +108,6 @@ contract VkRegistry is Ownable, SnarkCommon {
 
         processVkSet[processVkSig] = true;
 
-        VerifyingKey storage tallyVk = tallyVks[tallyVkSig];
-        tallyVk.alpha1 = _tallyVk.alpha1;
-        tallyVk.beta2 = _tallyVk.beta2;
-        tallyVk.gamma2 = _tallyVk.gamma2;
-        tallyVk.delta2 = _tallyVk.delta2;
-        for (uint8 i = 0; i < _tallyVk.ic.length; i ++) {
-            tallyVk.ic.push(_tallyVk.ic[i]);
-        }
-        tallyVkSet[tallyVkSig] = true;
-
-        emit TallyVkSet(tallyVkSig);
         emit ProcessVkSet(processVkSig);
     }
 

@@ -2,8 +2,8 @@
 out: "./zkeys"
 
 # Make sure that these paths are correct
-circomPath: "../../.local/bin/circom"
-snarkjsPath: "./node_modules/snarkjs/build/cli.cjs"
+circomPath: "/home/ubuntu/.cargo/bin/circom"
+snarkjsPath: "/home/ubuntu/.nvm/versions/node/v16.20.0/bin/snarkjs"
 
 circuits:
 - template: "../circuits/circom/processMessages_v2.circom"
@@ -11,32 +11,6 @@ circuits:
   params: [10, 2, 1, 2] # stateTreeDepth, msgTreeDepth, msgBatchDepth, voteOptionTreeDepth
   type: "test"
   pubInputs: ["step_in"]
-
-#- template: "../circuits/circom/processMessages.circom"
-  #component: "ProcessMessages"
-  #params: [10, 8, 2, 6]
-  #type: "prod"
-  #pubInputs: ["inputHash"]
-
-- template: "../circuits/circom/tallyVotes.circom"
-  component: "TallyVotes"
-  params: [10, 1, 2] # stateTreeDepth, intStateTreeDepth, voteOptionTreeDepth
-  type: "test"
-  pubInputs: ["inputHash"]
-
-#- template: "../circuits/circom/tallyVotes.circom"
-  #component: "TallyVotes"
-  #params: [10, 3, 6]
-  #type: "prod"
-  #pubInputs: ["inputHash"]
-
-
-- template: "../circuits/circom/subsidy.circom"
-  component: "SubsidyPerBatch"
-  params: [10, 1, 2] # stateTreeDepth, intStateTreeDepth, voteOptionTreeDepth
-  type: "test"
-  pubInputs: ["inputHash"]
-
 
 ptauFiles:
   1:

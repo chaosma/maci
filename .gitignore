@@ -148,3 +148,5 @@ cli/tallyinput.json
 
 # mdBook rendered files
 publish
+
+cli/circuit_inputs

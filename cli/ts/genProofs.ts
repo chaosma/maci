@@ -4,7 +4,6 @@ import * as fs from 'fs'
 import { genProof, verifyProof, extractVk } from 'maci-circuits'
 import { hashLeftRight, hash3 } from 'maci-crypto'
 import { PrivKey, Keypair, VerifyingKey } from 'maci-domainobjs'
-import { genTallyResultCommitment } from 'maci-core'
 
 import {
     parseArtifact,
@@ -17,8 +16,7 @@ import {
     validateEthAddress,
     contractExists,
     isPathExist,
-    saveOutput,
-} from './utils'
+    saveOutput, } from './utils'
 import {readJSONFile} from 'maci-common'
 import {contractFilepath} from './config'
 
@@ -66,24 +64,6 @@ const configureSubparser = (subparsers: any) => {
     )
 
     parser.addArgument(
-        ['-t', '--tally-file'],
-        {
-            required: true,
-            type: 'string',
-            help: 'A filepath in which to save the final vote tally and salt.',
-        }
-    )
-
-    parser.addArgument(
-        ['-sf', '--subsidy-file'],
-        {
-            type: 'string',
-            help: 'A filepath in which to save the subsidy data and commitment.',
-        }
-    )
-
-
-    parser.addArgument(
         ['-r', '--rapidsnark'],
         {
             required: true,
@@ -102,23 +82,6 @@ const configureSubparser = (subparsers: any) => {
     )
 
     parser.addArgument(
-        ['-wt', '--tally-witnessgen'],
-        {
-            required: true,
-            type: 'string',
-            help: 'The path to the TallyVotes witness generation binary',
-        }
-    )
-
-    parser.addArgument(
-        ['-ws', '--subsidy-witnessgen'],
-        {
-            type: 'string',
-            help: 'The path to the subsidy calculation witness generation binary',
-        }
-    )
-
-    parser.addArgument(
         ['-zp', '--process-zkey'],
         {
             required: true,
@@ -126,24 +89,6 @@ const configureSubparser = (subparsers: any) => {
             help: 'The path to the ProcessMessages .zkey file',
         }
     )
-
-    parser.addArgument(
-        ['-zt', '--tally-zkey'],
-        {
-            required: true,
-            type: 'string',
-            help: 'The path to the TallyVotes .zkey file',
-        }
-    )
-
-    parser.addArgument(
-        ['-zs', '--subsidy-zkey'],
-        {
-            type: 'string',
-            help: 'The path to the SubsidyPerBatch .zkey file',
-        }
-    )
-
 
     parser.addArgument(
         ['-f', '--output'],
@@ -161,17 +106,6 @@ const configureSubparser = (subparsers: any) => {
             help: 'transaction hash of MACI contract creation',
         }
     )
-
-
-
-    // TODO: support resumable proof generation
-    //parser.addArgument(
-        //['-r', '--resume'],
-        //{
-            //action: 'storeTrue',
-            //help: 'Resume proof generation from the last proof in the specified output file',
-        //}
-    //)
 }
 
 const genProofs = async (args: any) => {
@@ -189,55 +123,19 @@ const genProofs = async (args: any) => {
 
     const rapidsnarkExe = args.rapidsnark
     const processDatFile = args.process_witnessgen + ".dat"
-    const tallyDatFile =  args.tally_witnessgen + ".dat"
-
     const [ok, path] = isPathExist([
         rapidsnarkExe,
         args.process_witnessgen,
-        args.tally_witnessgen,
         processDatFile,
-        tallyDatFile,
         args.process_zkey,
-        args.tally_zkey,
         ])
     if (!ok) {
         console.error(`Error: ${path} does not exist.`)
         return 1
     }
 
-    let subsidyVk: VerifyingKey
-    if (args.subsidy_file) {
-        if (fs.existsSync(args.subsidy_file)) {
-            console.error(`Error: ${args.subsidy_file} exists. Please specify a different filepath.`)
-            return 1
-        }
-        if (!args.subsidy_zkey) {
-            console.error('Please specify subsidy zkey file location')
-            return 1
-        }
-        if (!args.subsidy_witnessgen) {
-            console.error('Please specify subsidy witnessgen file location')
-            return 1
-        }
-
-        const subsidyDatFile = args.subsidy_witnessgen + ".dat"
-
-        const [ok, path] = isPathExist([
-            args.subsidy_witnessgen,
-            subsidyDatFile,
-            args.subsidy_zkey,
-            ])
-        if (!ok) {
-            console.error(`Error: ${path} does not exist.`)
-            return 1
-        }
-
-        subsidyVk = extractVk(args.subsidy_zkey)
-    }
-
     // Extract the verifying keys
     const processVk = extractVk(args.process_zkey)
-    const tallyVk = extractVk(args.tally_zkey)
 
     // The coordinator's MACI private key
     let serializedPrivkey
@@ -421,166 +319,6 @@ const genProofs = async (args: any) => {
     let endTime = Date.now() 
     console.log(`----------gen processMessage proof took ${(endTime - startTime)/1000} seconds`)
 
-
-    const asHex = (val): string => {
-        return '0x' + BigInt(val).toString(16)
-    }
-
-    if (args.subsidy_file) {
-        startTime = Date.now()
-        console.log('\nGenerating proofs of subsidy calculation...')
-        const subsidyBatchSize = poll.batchSizes.subsidyBatchSize
-        const numLeaves = poll.stateLeaves.length
-        const totalSubsidyBatches = Math.ceil(numLeaves/subsidyBatchSize) ** 2
-        console.log(`subsidyBatchSize=${subsidyBatchSize}, numLeaves=${numLeaves}, totalSubsidyBatch=${totalSubsidyBatches}`)
-        
-        let subsidyCircuitInputs
-        let numBatchesCalced = 0
-        while (poll.hasUnfinishedSubsidyCalculation()) {
-            subsidyCircuitInputs = poll.subsidyPerBatch()
-            const r = genProof(subsidyCircuitInputs, rapidsnarkExe, args.subsidy_witnessgen, args.subsidy_zkey)
-    
-            const isValid = verifyProof(r.publicInputs, r.proof, subsidyVk) 
-            if (!isValid) {
-                console.error('Error: generated an invalid subsidy calc proof')
-                return 1
-            }
-            const thisProof = {
-                circuitInputs: subsidyCircuitInputs,
-                proof: r.proof,
-                publicInputs: r.publicInputs,
-            }
-    
-            subsidyProofs.push(thisProof)
-            numBatchesCalced++
-            saveOutput(outputDir, thisProof, `subsidy_${numBatchesCalced - 1}.json`)
-            console.log(`\nProgress: ${numBatchesCalced} / ${totalSubsidyBatches}`)
-        }
-    
-    
-        const subsidyFileData = {
-            provider: signer.provider.connection.url,
-            maci: maciAddress,
-            pollId,
-            newSubsidyCommitment: asHex(subsidyCircuitInputs.newSubsidyCommitment),
-            results: {
-                subsidy: poll.subsidy.map((x) => x.toString()),
-                salt: asHex(subsidyCircuitInputs.newSubsidySalt),
-            }
-        }
-    
-        fs.writeFileSync(args.subsidy_file, JSON.stringify(subsidyFileData, null, 4))
-        endTime = Date.now()
-        console.log(`----------gen subsidy proof took ${(endTime - startTime)/1000} seconds`)
-    }
-
-
-    console.log('\nGenerating proofs of vote tallying...')
-    startTime = Date.now()
-    const tallyBatchSize = poll.batchSizes.tallyBatchSize
-    const numStateLeaves = poll.stateLeaves.length
-    let totalTallyBatches = numStateLeaves <= tallyBatchSize ?
-    1
-    : 
-    Math.floor(numStateLeaves / tallyBatchSize)
-    if (
-        numStateLeaves > tallyBatchSize &&
-        numStateLeaves % tallyBatchSize > 0
-    ) {
-        totalTallyBatches ++
-    }
-
-    let tallyCircuitInputs
-    while (poll.hasUntalliedBallots()) {
-        tallyCircuitInputs = poll.tallyVotes()
-        const r = genProof(
-            tallyCircuitInputs,
-            rapidsnarkExe,
-            args.tally_witnessgen,
-            args.tally_zkey,
-        )
-
-        // Verify the proof
-        const isValid = verifyProof(
-            r.publicInputs,
-            r.proof,
-            tallyVk,
-        )
-
-        if (!isValid) {
-            console.error('Error: generated an invalid proof')
-            return 1
-        }
-        
-        const thisProof = {
-            circuitInputs: tallyCircuitInputs,
-            proof: r.proof,
-            publicInputs: r.publicInputs,
-        }
-
-        tallyProofs.push(thisProof)
-
-        saveOutput(outputDir, thisProof, `tally_${poll.numBatchesTallied - 1}.json`)
-
-        console.log(`\nProgress: ${poll.numBatchesTallied} / ${totalTallyBatches}`)
-    }
-
-    const tallyFileData = {
-        provider: signer.provider.connection.url,
-        maci: maciAddress,
-        pollId,
-        newTallyCommitment: asHex(tallyCircuitInputs.newTallyCommitment),
-        results: {
-            tally: poll.results.map((x) => x.toString()),
-            salt: asHex(tallyCircuitInputs.newResultsRootSalt),
-        },
-        totalSpentVoiceCredits: {
-            spent: poll.totalSpentVoiceCredits.toString(),
-            salt: asHex(tallyCircuitInputs.newSpentVoiceCreditSubtotalSalt),
-        },
-        perVOSpentVoiceCredits: {
-            tally: poll.perVOSpentVoiceCredits.map((x) => x.toString()),
-            salt: asHex(tallyCircuitInputs.newPerVOSpentVoiceCreditsRootSalt),
-        },
-    }
-
-    // Verify the results
-    // Compute newResultsCommitment
-    const newResultsCommitment = genTallyResultCommitment(
-        tallyFileData.results.tally.map((x) => BigInt(x)),
-        BigInt(tallyFileData.results.salt),
-        poll.treeDepths.voteOptionTreeDepth,
-    )
-    // Compute newSpentVoiceCreditsCommitment
-    const newSpentVoiceCreditsCommitment = hashLeftRight(
-        BigInt(tallyFileData.totalSpentVoiceCredits.spent),
-        BigInt(tallyFileData.totalSpentVoiceCredits.salt),
-    )
-
-    // Compute newPerVOSpentVoiceCreditsCommitment
-    const newPerVOSpentVoiceCreditsCommitment = genTallyResultCommitment(
-        tallyFileData.perVOSpentVoiceCredits.tally.map((x) => BigInt(x)),
-        BigInt(tallyFileData.perVOSpentVoiceCredits.salt),
-        poll.treeDepths.voteOptionTreeDepth,
-    )
-
-    // Compute newTallyCommitment
-    const newTallyCommitment = hash3([
-        newResultsCommitment,
-        newSpentVoiceCreditsCommitment,
-        newPerVOSpentVoiceCreditsCommitment
-    ])
-
-    fs.writeFileSync(args.tally_file, JSON.stringify(tallyFileData, null, 4))
-
-    console.log()
-    if ('0x' + newTallyCommitment.toString(16) === tallyFileData.newTallyCommitment) {
-        console.log('OK')
-    } else {
-        console.error('Error: the newTallyCommitment is invalid.')
-    }
-    endTime = Date.now()
-    console.log(`----------gen tally proof took ${(endTime - startTime)/1000} seconds`)
 
     return 0
 }

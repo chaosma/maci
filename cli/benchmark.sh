@@ -43,9 +43,7 @@ creditPerVote=$(($maxCredit / $votePerUser))
 
 node build/index.js deployVkRegistry && \
 node build/index.js setVerifyingKeys -s $stateTreeDepth -i $intStateTreeDepth -m $msgTreeDepth -v $voteOptionTreeDepth -b $msgBatchDepth \
-    -p ./zkeys/ProcessMessages_v2_"$stateTreeDepth"-"$msgTreeDepth"-"$msgBatchDepth"-"$voteOptionTreeDepth"_test.0.zkey \
-    -t ./zkeys/TallyVotes_"$stateTreeDepth"-"$intStateTreeDepth"-"$voteOptionTreeDepth"_test.0.zkey  \
-    -ss ./zkeys/SubsidyPerBatch_"$stateTreeDepth"-"$intStateTreeDepth"-"$voteOptionTreeDepth"_test.0.zkey 
+    -p ./zkeys/ProcessMessages_v2_"$stateTreeDepth"-"$msgTreeDepth"-"$msgBatchDepth"-"$voteOptionTreeDepth"_test.0.zkey 
 
 
 node build/index.js create 
@@ -106,34 +104,9 @@ node build/index.js genProofs \
     -o 0 \
     -r ~/rapidsnark/build/prover \
     -wp ./zkeys/ProcessMessages_v2_"$stateTreeDepth"-"$msgTreeDepth"-"$msgBatchDepth"-"$voteOptionTreeDepth"_test \
-    -wt ./zkeys/TallyVotes_"$stateTreeDepth"-"$intStateTreeDepth"-"$voteOptionTreeDepth"_test \
-    -ws ./zkeys/SubsidyPerBatch_"$stateTreeDepth"-"$intStateTreeDepth"-"$voteOptionTreeDepth"_test \
     -zp ./zkeys/ProcessMessages_v2_"$stateTreeDepth"-"$msgTreeDepth"-"$msgBatchDepth"-"$voteOptionTreeDepth"_test.0.zkey \
-    -zt ./zkeys/TallyVotes_"$stateTreeDepth"-"$intStateTreeDepth"-"$voteOptionTreeDepth"_test.0.zkey  \
-    -zs ./zkeys/SubsidyPerBatch_"$stateTreeDepth"-"$intStateTreeDepth"-"$voteOptionTreeDepth"_test.0.zkey \
-    -t tally.json \
-    -sf subsidy.json \
     -f proofs/
 end=`date +%s`
 runtime=$((end-start))
 echo "---------gen proof costs: "$runtime" seconds"
-
-echo "prove on chain ..."
-start=`date +%s`
-node build/index.js proveOnChain \
-    -o 0 \
-    -f proofs/
-end=`date +%s`
-runtime=$((end-start))
-echo "----------prove on chain costs: "$runtime" seconds"
-
-echo "verify on chain ..."
-start=`date +%s`
-node build/index.js verify \
-    -o 0 \
-    -t tally.json \
-    -sf subsidy.json
-end=`date +%s`
-runtime=$((end-start))
-echo "----------verify on chain costs: "$runtime" seconds"
 
