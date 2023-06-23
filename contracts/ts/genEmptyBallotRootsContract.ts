@@ -19,7 +19,7 @@ const genEmptyBallotRootsContract = (
     ).toString()
 
     // This hard-coded value should be consistent with the value of `stateTreeDepth` of MACI.sol
-    const stateTreeDepth = 7
+    const stateTreeDepth = 6
 
     let r = ''
     for (let i = 1; i < 6; i ++) {

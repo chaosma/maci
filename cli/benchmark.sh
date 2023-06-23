@@ -1,9 +1,9 @@
 #!/bin/bash
 # benchmark test different params
 
-stateTreeDepth=7
+stateTreeDepth=6
 intStateTreeDepth=2
-msgTreeDepth=7
+msgTreeDepth=8
 voteOptionTreeDepth=3
 msgBatchDepth=2
 

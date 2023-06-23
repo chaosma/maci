@@ -8,7 +8,7 @@ snarkjsPath: "/home/ubuntu/.nvm/versions/node/v16.20.0/bin/snarkjs"
 circuits:
 - template: "../circuits/circom/processMessages_v2.circom"
   component: "ProcessMessages_v2"
-  params: [7, 7, 2, 3] # stateTreeDepth, msgTreeDepth, msgBatchDepth, voteOptionTreeDepth
+  params: [6, 8, 2, 3] # stateTreeDepth, msgTreeDepth, msgBatchDepth, voteOptionTreeDepth
   type: "test"
   pubInputs: ["step_in"]
 
