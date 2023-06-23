@@ -13,16 +13,16 @@ cordsk=macisk.49953af3585856f539d194b46c82f4ed54ec508fb9b882940cbe68bbc57e59e
 macipk=macipk.3e7bb2d7f0a1b7e980f1b6f363d1e3b7a12b9ae354c2cd60a9cfa9fd12917391 
 macisk=macisk.fd7aa614ec4a82716ffc219c24fd7e7b52a2b63b5afb17e81c22fe21515539c 
 
-duration=120
+duration=100000
 #maxVoteOption=$((5 ** $voteOptionTreeDepth))
-maxVoteOption=25
+maxVoteOption=125
 #maxMsg=$((5 ** $msgTreeDepth))
-maxMsg=50
+maxMsg=20000
 
-maxSignUp=6
-votePerUser=2
+maxSignUp=100
+votePerUser=10
 
-maxCredit=9 
+maxCredit=80
 creditPerVote=$(($maxCredit / $votePerUser))
 
 #start=`date +%s`
